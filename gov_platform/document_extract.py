@@ -6,12 +6,12 @@ files fail closed.
 """
 from __future__ import annotations
 
+import dataclasses
 import hashlib
 import io
 import os
 import subprocess
 import tempfile
-from dataclasses import dataclass
 
 
 MAX_DOCUMENT_BYTES = 50 * 1024 * 1024
@@ -23,7 +23,7 @@ ALLOWED_CONTENT_TYPES = {
 }
 
 
-@dataclass(frozen=True)
+@dataclasses.dataclass(frozen=True)
 class ExtractedDocument:
     sha256: str
     text: str
