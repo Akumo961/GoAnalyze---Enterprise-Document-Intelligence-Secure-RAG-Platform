@@ -48,17 +48,18 @@ def _identity_from_claims(claims: dict[str, Any]) -> ApiIdentity:
     return ApiIdentity(subject=subject, tenant_id=tenant_id, roles=roles)
 
 
+def _header_text(value: object) -> str | None:
+    """Normalize an HTTP header value, including direct dependency calls."""
+    return value if isinstance(value, str) else None
+
+
 async def authenticate(
     authorization: str | None = None,
     x_dev_tenant_id: str | None = None,
     x_dev_subject: str | None = None,
     x_dev_roles: str | None = None,
 ) -> ApiIdentity:
-    """Authenticate normalized header values.
-
-    Keeping header extraction outside this function makes direct unit tests
-    deterministic while the FastAPI adapter below remains the HTTP boundary.
-    """
+    """Authenticate normalized header values."""
     settings = get_settings()
     if settings.allow_insecure_dev_auth:
         if not x_dev_tenant_id or not x_dev_subject:
@@ -94,7 +95,12 @@ async def require_identity(
     x_dev_subject: str | None = Header(default=None),
     x_dev_roles: str | None = Header(default=None),
 ) -> ApiIdentity:
-    return await authenticate(authorization, x_dev_tenant_id, x_dev_subject, x_dev_roles)
+    return await authenticate(
+        _header_text(authorization),
+        _header_text(x_dev_tenant_id),
+        _header_text(x_dev_subject),
+        _header_text(x_dev_roles),
+    )
 
 
 def require_role(*allowed: str):
