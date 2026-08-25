@@ -7,7 +7,6 @@ for local execution and tests; it is not presented as a production datastore.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from uuid import UUID
 
 from .models import EvidenceCitation
 from .rag_engine import RetrievalChunk, retrieve
