@@ -1,9 +1,4 @@
-"""Production-oriented RAG primitives with strict evidence boundaries.
-
-The engine is provider-neutral. Retrieval is deterministic and local; generation
-uses an explicitly configured OpenAI-compatible endpoint. No model is silently
-selected and no regulatory claim is allowed without an approved source.
-"""
+"""Production-oriented RAG primitives with strict evidence boundaries."""
 from __future__ import annotations
 
 import json
@@ -16,6 +11,7 @@ from typing import Protocol
 from .models import EvidenceCitation
 
 _TOKEN_RE = re.compile(r"[\wÀ-ÿ]+", re.UNICODE)
+_CITATION_RE = re.compile(r"\[([0-9a-fA-F-]{36}):([^\]]+)\]")
 _INJECTION_PATTERNS = (
     "ignore previous instructions",
     "ignore all previous instructions",
@@ -54,11 +50,6 @@ class LLMProvider(Protocol):
 
 
 class OpenAICompatibleProvider:
-    """Minimal HTTP adapter for an OpenAI-compatible chat-completions API.
-
-    The endpoint and key are injected through configuration. The key is never
-    included in prompts, logs, citations, or returned application objects.
-    """
     name = "openai-compatible"
 
     def __init__(self, endpoint: str, api_key: str, model: str, timeout: float = 30.0) -> None:
@@ -118,7 +109,18 @@ def retrieve(question: str, citations: list[EvidenceCitation], top_k: int = 5) -
         score = overlap / max(len(q), 1)
         if overlap:
             ranked.append(RetrievalChunk(citation=citation, score=score))
-    return sorted(ranked, key=lambda item: (-item.score, item.citation.document_id))[:top_k]
+    return sorted(ranked, key=lambda item: (-item.score, str(item.citation.document_id)))[:top_k]
+
+
+def validate_model_output(text: str, citations: tuple[EvidenceCitation, ...]) -> str:
+    """Fail closed if a model cites a source that was not retrieved."""
+    allowed = {str(c.document_id): c.chunk_id for c in citations}
+    for document_id, chunk_id in _CITATION_RE.findall(text):
+        if document_id not in allowed or allowed[document_id] != chunk_id:
+            raise ValueError("hallucinated_citation_detected")
+    if contains_prompt_injection(text):
+        raise ValueError("unsafe_model_output_detected")
+    return text
 
 
 class ProductionRAG:
@@ -146,16 +148,8 @@ class ProductionRAG:
             provider_name = "retrieval-only"
             model = "none"
         else:
-            text = self.provider.generate(system, user)
+            raw = self.provider.generate(system, user)
+            text = validate_model_output(raw, selected)
             provider_name = self.provider.name
             model = self.provider.model
-        return RAGAnswer(
-            statement=text,
-            factual_evidence=(context,),
-            inference=(),
-            uncertainty=(),
-            citations=selected,
-            grounded=True,
-            model=model,
-            provider=provider_name,
-        )
+        return RAGAnswer(text, (context,), (), (), selected, True, model, provider_name)
