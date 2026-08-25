@@ -18,6 +18,7 @@ def upgrade() -> None:
     op.create_table(
         "regulatory_sources",
         sa.Column("source_id", sa.String(length=255), nullable=False),
+        sa.Column("version", sa.String(length=64), nullable=False),
         sa.Column("title", sa.String(length=1024), nullable=False),
         sa.Column("knowledge_type", sa.String(length=64), nullable=False),
         sa.Column("jurisdiction", sa.String(length=255), nullable=False),
@@ -27,11 +28,9 @@ def upgrade() -> None:
         sa.Column("source_uri", sa.String(length=2048), nullable=False),
         sa.Column("effective_from", sa.Date(), nullable=True),
         sa.Column("effective_to", sa.Date(), nullable=True),
-        sa.Column("version", sa.String(length=64), nullable=False),
-        sa.PrimaryKeyConstraint("source_id"),
+        sa.PrimaryKeyConstraint("source_id", "version"),
     )
     op.create_index("ix_regulatory_sources_jurisdiction", "regulatory_sources", ["jurisdiction"])
-    op.create_index("ix_regulatory_sources_source_id_version", "regulatory_sources", ["source_id", "version"], unique=True)
 
     op.create_table(
         "regulatory_obligations",
@@ -55,6 +54,5 @@ def downgrade() -> None:
     op.drop_index("ix_regulatory_obligations_jurisdiction", table_name="regulatory_obligations")
     op.drop_index("ix_regulatory_obligations_source_id", table_name="regulatory_obligations")
     op.drop_table("regulatory_obligations")
-    op.drop_index("ix_regulatory_sources_source_id_version", table_name="regulatory_sources")
     op.drop_index("ix_regulatory_sources_jurisdiction", table_name="regulatory_sources")
     op.drop_table("regulatory_sources")
