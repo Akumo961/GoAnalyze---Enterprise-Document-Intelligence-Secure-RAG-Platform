@@ -4,10 +4,10 @@ Authoritative legal content is external to the core platform. This module
 provides a schema and deterministic matching engine for customer-loaded,
 source-controlled regulatory knowledge.
 """
+from collections.abc import Iterable
 from dataclasses import dataclass
 from datetime import date
 from enum import StrEnum
-from typing import Iterable
 
 
 class KnowledgeType(StrEnum):
