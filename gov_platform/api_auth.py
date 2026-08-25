@@ -12,7 +12,7 @@ from typing import Any
 
 import httpx
 import jwt
-from fastapi import Header, HTTPException, status
+from fastapi import Depends, Header, HTTPException, status
 
 from .config import get_settings
 
@@ -62,7 +62,9 @@ async def require_identity(
     settings = get_settings()
     if settings.allow_insecure_dev_auth:
         if not x_dev_tenant_id or not x_dev_subject:
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="development_identity_required")
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED, detail="development_identity_required"
+            )
         roles = frozenset(role.strip() for role in (x_dev_roles or "").split(",") if role.strip())
         return ApiIdentity(x_dev_subject, x_dev_tenant_id, roles)
 
@@ -87,7 +89,7 @@ async def require_identity(
 
 
 def require_role(*allowed: str):
-    async def dependency(identity: ApiIdentity = __import__("fastapi").Depends(require_identity)) -> ApiIdentity:
+    async def dependency(identity: ApiIdentity = Depends(require_identity)) -> ApiIdentity:
         if not identity.roles.intersection(allowed):
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="insufficient_role")
         return identity
