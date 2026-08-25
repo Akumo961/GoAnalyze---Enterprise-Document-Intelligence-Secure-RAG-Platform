@@ -1,7 +1,7 @@
 """Tamper-evident audit-chain primitives for decision-support events."""
 import hashlib
 import json
-from typing import Iterable
+from collections.abc import Iterable
 
 from .models import AuditEvent
 
