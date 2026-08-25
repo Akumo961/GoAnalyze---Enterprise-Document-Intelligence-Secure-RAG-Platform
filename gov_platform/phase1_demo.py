@@ -10,6 +10,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from hashlib import sha256
+from typing import cast
 from uuid import UUID, uuid5
 
 from .regulatory_knowledge import RegulatoryObligation, RegulatorySource, SourceAuthority
@@ -195,7 +196,7 @@ def map_regulatory_evidence(case: DemoCase) -> list[dict[str, object]]:
 
 def assess_priority(case: DemoCase, completeness_result: dict[str, object], mappings: list[dict[str, object]]) -> dict[str, object]:
     missing = len(completeness_result["missing"]) if isinstance(completeness_result["missing"], list) else 0
-    coverage = sum(float(m["coverage"]) for m in mappings) / max(1, len(mappings))
+    coverage = sum(cast(float, m["coverage"]) for m in mappings) / max(1, len(mappings))
     score = round(min(100.0, 25.0 + missing * 15.0 + (1.0 - coverage) * 30.0), 2)
     level = "high" if score >= 70 else "medium" if score >= 40 else "low"
     result: dict[str, object] = {"score": score, "priority": level, "method": "synthetic demonstration heuristic", "human_decision_required": True}
