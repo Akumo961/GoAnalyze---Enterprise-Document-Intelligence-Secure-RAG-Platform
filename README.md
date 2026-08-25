@@ -4,6 +4,18 @@ Secure environmental document intelligence and AI-assisted decision support for 
 
 > **Evidence-first positioning:** this repository contains a substantial enterprise application foundation, but it is not presented as government-certified, production-approved, or procurement-approved. Capabilities are classified by evidence in [`PRODUCTION_READINESS.md`](PRODUCTION_READINESS.md).
 
+## Phase 1 pilot
+
+A reproducible synthetic environmental pilot is now implemented. It demonstrates the complete decision-support storyline without inventing Québec legal requirements or requiring external services.
+
+```bash
+python scripts/run_phase1_demo.py
+```
+
+The pilot covers synthetic document intake, classification, completeness checking, evidence-grounded question answering with citations, explicitly DEMO regulatory mapping, priority assessment, analyst assignment, human decision recording, audit events, and measurable workflow metrics. The same scenario is available as an analyst-oriented UI at `/phase1` when the frontend is running.
+
+See [`docs/PHASE1_PILOT.md`](docs/PHASE1_PILOT.md) for acceptance criteria and limitations.
+
 ## Target use
 
 GoAnalyze Government is designed to help public-sector analysts process environmental applications, permits, studies, inspection records, correspondence and compliance evidence while preserving human accountability.
@@ -72,6 +84,7 @@ GoAnalyze Government is decision-support software. It must not autonomously issu
 - [`FINAL_SECURITY_REPORT.md`](FINAL_SECURITY_REPORT.md) — recorded security testing evidence
 - [`FINAL_PRODUCTION_READINESS.md`](FINAL_PRODUCTION_READINESS.md) — historical readiness assessment
 - [`FEATURE_COMPLETION_REPORT.md`](FEATURE_COMPLETION_REPORT.md) — documented feature implementation evidence
+- [`docs/PHASE1_PILOT.md`](docs/PHASE1_PILOT.md) — Phase 1 synthetic pilot and acceptance criteria
 - [`docs/SECURITY_AI_GOVERNANCE.md`](docs/SECURITY_AI_GOVERNANCE.md) — AI/security control model
 - [`docs/GOVERNMENT_PRODUCT.md`](docs/GOVERNMENT_PRODUCT.md) — product and commercial boundary
 - [`docs/PROCUREMENT_READINESS.md`](docs/PROCUREMENT_READINESS.md) — buyer evaluation framework
