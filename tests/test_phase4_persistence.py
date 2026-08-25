@@ -1,7 +1,9 @@
+from collections.abc import AsyncIterator
 from datetime import UTC, date, datetime, timedelta
 
 import pytest
-from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
+from sqlalchemy import func, select
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from gov_platform.db.models import Base
 from gov_platform.db.regulatory import RegulatoryObligationORM, RegulatorySourceORM
@@ -12,7 +14,7 @@ from gov_platform.retention_executor import RetentionCandidate, execute_deletion
 
 
 @pytest.fixture
-async def session():
+async def session() -> AsyncIterator[AsyncSession]:
     engine = create_async_engine("sqlite+aiosqlite:///:memory:")
     async with engine.begin() as connection:
         await connection.run_sync(Base.metadata.create_all)
@@ -23,19 +25,22 @@ async def session():
 
 
 @pytest.mark.asyncio
-async def test_regulatory_source_versions_are_persistent(session) -> None:
+async def test_regulatory_source_versions_are_persistent(session: AsyncSession) -> None:
     repo = RegulatoryKnowledgeRepository(session)
     source_v1 = RegulatorySource("demo-source", "Synthetic source", KnowledgeType.guidance, "Québec", "Demo", False, "demo://1", version="1", authority=SourceAuthority.demo)
     source_v2 = RegulatorySource("demo-source", "Synthetic source", KnowledgeType.guidance, "Québec", "Demo", False, "demo://2", version="2", authority=SourceAuthority.customer)
     await repo.upsert_source(source_v1)
     await repo.upsert_source(source_v2)
-    assert (await repo.source("demo-source", "1")).source_uri == "demo://1"
-    assert (await repo.source("demo-source", "2")).source_uri == "demo://2"
-    assert await session.scalar(__import__("sqlalchemy").select(__import__("sqlalchemy").func.count()).select_from(RegulatorySourceORM)) == 2
+    stored_v1 = await repo.source("demo-source", "1")
+    stored_v2 = await repo.source("demo-source", "2")
+    assert stored_v1 is not None and stored_v1.source_uri == "demo://1"
+    assert stored_v2 is not None and stored_v2.source_uri == "demo://2"
+    count = await session.scalar(select(func.count()).select_from(RegulatorySourceORM))
+    assert count == 2
 
 
 @pytest.mark.asyncio
-async def test_active_obligations_are_date_and_jurisdiction_scoped(session) -> None:
+async def test_active_obligations_are_date_and_jurisdiction_scoped(session: AsyncSession) -> None:
     repo = RegulatoryKnowledgeRepository(session)
     source = RegulatorySource("s", "Synthetic", KnowledgeType.guidance, "Québec", "Demo", False, "demo://s", authority=SourceAuthority.demo)
     await repo.upsert_source(source)
