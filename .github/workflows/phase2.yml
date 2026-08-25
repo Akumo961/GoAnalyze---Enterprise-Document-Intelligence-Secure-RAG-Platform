@@ -38,6 +38,5 @@ jobs:
           ruff check gov_platform/rag_engine.py gov_platform/document_extract.py gov_platform/ai_security.py gov_platform/rag_index.py gov_platform/phase2_pipeline.py gov_platform/rag_config.py tests/test_phase2_rag_security.py tests/test_phase2_document_extract.py tests/test_phase2_pipeline.py scripts/run_phase2_eval.py
           mypy gov_platform/rag_engine.py gov_platform/document_extract.py gov_platform/ai_security.py gov_platform/rag_index.py gov_platform/phase2_pipeline.py gov_platform/rag_config.py
 
-      # This workflow intentionally tests the PR head SHA. GitHub's pull_request
-      # event normally checks out a synthetic merge ref; using the head SHA makes
-      # the acceptance result directly attributable to the Phase 2 branch commit.
+      # Phase 2 acceptance deliberately validates the exact branch commit.
+      # This avoids attributing a stale synthetic PR merge ref to the result.
