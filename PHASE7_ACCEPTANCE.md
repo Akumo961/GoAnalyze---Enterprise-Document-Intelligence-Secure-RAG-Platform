@@ -5,7 +5,7 @@
 Phase 7 establishes a secure document trust boundary on top of the Phase 6 HTTP service:
 
 - tenant-scoped document registration and listing for an existing case;
-- server-side tenant ownership check before document registration;
+- server-side case ownership check before document registration;
 - safe filename normalization that strips path components and control characters;
 - explicit document content-type allowlist;
 - SHA-256 format validation and canonical lowercase storage;
