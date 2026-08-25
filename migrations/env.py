@@ -11,7 +11,7 @@ from sqlalchemy.ext.asyncio import async_engine_from_config
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from gov_platform.config import get_settings
-from gov_platform.db import regulatory  # noqa: F401
+from gov_platform.db import cases, regulatory  # noqa: F401
 from gov_platform.db.models import Base
 
 config = context.config
