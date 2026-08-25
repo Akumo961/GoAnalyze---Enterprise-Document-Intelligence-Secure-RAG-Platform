@@ -10,9 +10,11 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from hashlib import sha256
-from uuid import UUID, uuid4
+from uuid import UUID, uuid5
 
 from .regulatory_knowledge import RegulatoryObligation, RegulatorySource, SourceAuthority
+
+DEMO_NAMESPACE = UUID("10000000-0000-4000-8000-000000000010")
 
 
 @dataclass(frozen=True)
@@ -102,7 +104,7 @@ DEMO_OBLIGATIONS = (
 
 
 def _doc(filename: str, document_type: str, text: str, pages: int = 1) -> DemoDocument:
-    return DemoDocument(uuid4(), filename, document_type, text, pages)
+    return DemoDocument(uuid5(DEMO_NAMESPACE, filename), filename, document_type, text, pages)
 
 
 def build_demo_case() -> DemoCase:
