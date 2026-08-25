@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from functools import lru_cache
-from typing import Any
+from typing import Annotated, Any
 
 import httpx
 import jwt
@@ -22,6 +22,12 @@ class ApiIdentity:
     subject: str
     tenant_id: str
     roles: frozenset[str]
+
+
+AuthorizationHeader = Annotated[str | None, Header(default=None)]
+DevTenantHeader = Annotated[str | None, Header(default=None)]
+DevSubjectHeader = Annotated[str | None, Header(default=None)]
+DevRolesHeader = Annotated[str | None, Header(default=None)]
 
 
 def _jwks_url() -> str:
@@ -54,10 +60,10 @@ def _identity_from_claims(claims: dict[str, Any]) -> ApiIdentity:
 
 
 async def require_identity(
-    authorization: str | None = Header(default=None),
-    x_dev_tenant_id: str | None = Header(default=None),
-    x_dev_subject: str | None = Header(default=None),
-    x_dev_roles: str | None = Header(default=None),
+    authorization: AuthorizationHeader = None,
+    x_dev_tenant_id: DevTenantHeader = None,
+    x_dev_subject: DevSubjectHeader = None,
+    x_dev_roles: DevRolesHeader = None,
 ) -> ApiIdentity:
     settings = get_settings()
     if settings.allow_insecure_dev_auth:
@@ -83,7 +89,7 @@ async def require_identity(
             issuer=str(settings.keycloak_issuer),
             options={"require": ["exp", "iat", "sub"]},
         )
-    except (jwt.PyJWTError, httpx.HTTPError) as exc:
+    except (jwt.PyJWKError, jwt.PyJWTError, httpx.HTTPError) as exc:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="invalid_token") from exc
     return _identity_from_claims(claims)
 
