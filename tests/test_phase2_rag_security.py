@@ -2,9 +2,18 @@ from uuid import uuid4
 
 import pytest
 
-from gov_platform.ai_security import assert_no_cross_tenant_retrieval, evaluate_citations, sanitize_untrusted_document
+from gov_platform.ai_security import (
+    assert_no_cross_tenant_retrieval,
+    evaluate_citations,
+    sanitize_untrusted_document,
+)
 from gov_platform.models import EvidenceCitation
-from gov_platform.rag_engine import ProductionRAG, contains_prompt_injection, retrieve, validate_model_output
+from gov_platform.rag_engine import (
+    ProductionRAG,
+    contains_prompt_injection,
+    retrieve,
+    validate_model_output,
+)
 
 
 def citation(text: str) -> EvidenceCitation:
@@ -12,7 +21,10 @@ def citation(text: str) -> EvidenceCitation:
 
 
 def test_retrieval_is_deterministic_and_ranked():
-    citations = [citation("effluent monitoring report contains monthly discharge results"), citation("unrelated administrative correspondence")]
+    citations = [
+        citation("effluent monitoring report contains monthly discharge results"),
+        citation("unrelated administrative correspondence"),
+    ]
     result = retrieve("discharge monitoring", citations)
     assert len(result) == 1
     assert result[0].score > 0
