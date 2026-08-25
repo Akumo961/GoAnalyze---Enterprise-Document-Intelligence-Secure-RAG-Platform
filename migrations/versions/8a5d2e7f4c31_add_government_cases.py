@@ -4,6 +4,7 @@ Revision ID: 8a5d2e7f4c31
 Revises: 7c4f1b8e9a21
 """
 from collections.abc import Sequence
+
 import sqlalchemy as sa
 from alembic import op
 
@@ -32,8 +33,12 @@ def upgrade() -> None:
         sa.Column("closed_at", sa.DateTime(timezone=True), nullable=True),
         sa.PrimaryKeyConstraint("id"),
     )
-    op.create_index("ix_government_cases_tenant_state", "government_cases", ["tenant_id", "state"])
-    op.create_index("ix_government_cases_tenant_created", "government_cases", ["tenant_id", "created_at"])
+    op.create_index(
+        "ix_government_cases_tenant_state", "government_cases", ["tenant_id", "state"]
+    )
+    op.create_index(
+        "ix_government_cases_tenant_created", "government_cases", ["tenant_id", "created_at"]
+    )
 
 
 def downgrade() -> None:
