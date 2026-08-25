@@ -1,5 +1,4 @@
 from datetime import UTC, date, datetime, timedelta
-from uuid import uuid4
 
 import pytest
 
@@ -12,7 +11,7 @@ from gov_platform.regulatory_knowledge import (
     obligations_for,
 )
 from gov_platform.retention import RetentionPolicy, deletion_due
-from gov_platform.workflow import CaseState, ReviewCase, validate_transition_history
+from gov_platform.workflow import CaseState, ReviewCase, WorkflowRole, validate_transition_history
 
 
 def test_regulatory_matching_is_jurisdiction_and_date_scoped() -> None:
@@ -35,15 +34,20 @@ def test_workflow_preserves_human_approval_boundary() -> None:
     case.transition("analyst", CaseState.technical_review, "Complete intake")
     case.transition("analyst", CaseState.legal_review, "Technical review complete")
     case.transition("analyst", CaseState.recommendation, "Recommendation prepared")
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="decision_officer_role_required"):
         case.transition("system", CaseState.approved, "Automated approval")
-    case.transition("delegated_officer", CaseState.approved, "Human decision")
+    case.transition(
+        "delegated_officer",
+        CaseState.approved,
+        "Human decision",
+        role=WorkflowRole.decision_officer,
+    )
     assert validate_transition_history(case.transitions)
 
 
 def test_workflow_rejects_illegal_transition() -> None:
     case = ReviewCase("case-2", "tenant-a")
-    with pytest.raises(ValueError, match="invalid_transition"):
+    with pytest.raises(ValueError, match="decision_officer_role_required"):
         case.transition("analyst", CaseState.approved, "skip review")
 
 
