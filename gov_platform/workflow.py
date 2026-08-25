@@ -1,7 +1,7 @@
 """Human-controlled environmental review workflow state machine."""
+from collections.abc import Iterable
 from dataclasses import dataclass, field
 from enum import StrEnum
-from typing import Iterable
 
 
 class CaseState(StrEnum):
