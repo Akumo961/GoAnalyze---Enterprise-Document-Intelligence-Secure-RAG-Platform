@@ -4,9 +4,9 @@ This layer intentionally separates policy evaluation from destructive deletion.
 A caller must provide a legal-hold decision and an explicit deletion callback;
 the platform never silently deletes records merely because they are old.
 """
+from collections.abc import Callable, Iterable
 from dataclasses import dataclass
 from datetime import UTC, datetime
-from collections.abc import Callable, Iterable
 
 from .retention import RetentionPolicy, deletion_due
 
