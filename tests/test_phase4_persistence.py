@@ -8,7 +8,12 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 from gov_platform.db.models import Base
 from gov_platform.db.regulatory import RegulatoryObligationORM, RegulatorySourceORM
 from gov_platform.db.regulatory_repository import RegulatoryKnowledgeRepository
-from gov_platform.regulatory_knowledge import KnowledgeType, RegulatoryObligation, RegulatorySource, SourceAuthority
+from gov_platform.regulatory_knowledge import (
+    KnowledgeType,
+    RegulatoryObligation,
+    RegulatorySource,
+    SourceAuthority,
+)
 from gov_platform.retention import RetentionPolicy
 from gov_platform.retention_executor import RetentionCandidate, execute_deletions, plan_retention
 
