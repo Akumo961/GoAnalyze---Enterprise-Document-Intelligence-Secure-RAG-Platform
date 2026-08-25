@@ -3,6 +3,7 @@ from uuid import UUID
 
 import httpx
 import pytest
+from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from gov_platform.api import app
@@ -96,9 +97,9 @@ def test_document_security_rejects_network_urls_and_unsafe_types() -> None:
     assert sanitize_filename(r"C:\uploads\permit.pdf") == "permit.pdf"
     assert validate_content_type("Application/PDF") == "application/pdf"
     assert validate_sha256("A" * 64) == "a" * 64
-    with pytest.raises(Exception):
+    with pytest.raises(HTTPException, match="invalid_object_uri"):
         validate_object_uri("https://example.com/private.pdf")
-    with pytest.raises(Exception):
+    with pytest.raises(HTTPException, match="invalid_object_uri"):
         validate_object_uri("s3://bucket/../secret.pdf")
-    with pytest.raises(Exception):
+    with pytest.raises(HTTPException, match="unsupported_content_type"):
         validate_content_type("application/x-msdownload")
