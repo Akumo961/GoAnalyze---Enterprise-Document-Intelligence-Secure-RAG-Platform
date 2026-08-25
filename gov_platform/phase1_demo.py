@@ -141,7 +141,7 @@ def completeness(case: DemoCase) -> dict[str, object]:
     required = {"application_form", "site_plan", "effluent_characterization", "mitigation_plan", "public_consultation_record"}
     present = {d.document_type for d in case.documents}
     missing = sorted(required - present)
-    result = {"required": sorted(required), "present": sorted(present), "missing": missing, "complete": not missing}
+    result: dict[str, object] = {"required": sorted(required), "present": sorted(present), "missing": missing, "complete": not missing}
     case.audit("case.completeness_checked", "demo-system", result)
     return result
 
@@ -160,7 +160,7 @@ def grounded_question(case: DemoCase, question: str) -> dict[str, object]:
             hits.append(_citation(document, document.text))
     hits = hits[:5]
     if not hits:
-        result = {"status": "withheld", "answer": None, "citations": [], "reason": "no_supporting_evidence"}
+        result: dict[str, object] = {"status": "withheld", "answer": None, "citations": [], "reason": "no_supporting_evidence"}
     else:
         result = {
             "status": "grounded",
@@ -177,7 +177,7 @@ def map_regulatory_evidence(case: DemoCase) -> list[dict[str, object]]:
     by_type = {d.document_type: d for d in case.documents}
     mappings: list[dict[str, object]] = []
     for obligation in DEMO_OBLIGATIONS:
-        evidence = []
+        evidence: list[DemoCitation] = []
         for required_type in obligation.evidence_requirements:
             document = by_type.get(required_type)
             if document:
@@ -194,18 +194,18 @@ def map_regulatory_evidence(case: DemoCase) -> list[dict[str, object]]:
 
 
 def assess_priority(case: DemoCase, completeness_result: dict[str, object], mappings: list[dict[str, object]]) -> dict[str, object]:
-    missing = len(completeness_result["missing"])
+    missing = len(completeness_result["missing"]) if isinstance(completeness_result["missing"], list) else 0
     coverage = sum(float(m["coverage"]) for m in mappings) / max(1, len(mappings))
     score = round(min(100.0, 25.0 + missing * 15.0 + (1.0 - coverage) * 30.0), 2)
     level = "high" if score >= 70 else "medium" if score >= 40 else "low"
-    result = {"score": score, "priority": level, "method": "synthetic demonstration heuristic", "human_decision_required": True}
+    result: dict[str, object] = {"score": score, "priority": level, "method": "synthetic demonstration heuristic", "human_decision_required": True}
     case.audit("case.priority_assessed", "demo-system", result)
     return result
 
 
 def assign_analyst(case: DemoCase, analyst: str = "analyst.demo") -> dict[str, object]:
     case.assigned_to = analyst
-    result = {"assignee": analyst, "queue": "environmental-technical-review", "status": "technical_review"}
+    result: dict[str, object] = {"assignee": analyst, "queue": "environmental-technical-review", "status": "technical_review"}
     case.audit("case.assigned", analyst, result)
     return result
 
@@ -218,7 +218,7 @@ def record_analyst_decision(case: DemoCase, decision: str, note: str, analyst: s
         raise ValueError("analyst_note_required")
     case.analyst_decision = decision
     case.analyst_note = note.strip()
-    result = {"decision": decision, "note": case.analyst_note, "human_decision": True, "actor": analyst}
+    result: dict[str, object] = {"decision": decision, "note": case.analyst_note, "human_decision": True, "actor": analyst}
     case.audit("analyst.decision_recorded", analyst, result)
     return result
 
@@ -243,6 +243,6 @@ def run_phase1_demo() -> dict[str, object]:
         "assignment": assignment,
         "decision": decision,
         "audit": case.audit_events,
-        "metrics": {"documents_processed": len(case.documents), "processing_time_ms": elapsed_ms, "citation_coverage": len(answer["citations"]) / 5.0},
+        "metrics": {"documents_processed": len(case.documents), "processing_time_ms": elapsed_ms, "citation_coverage": len(answer["citations"]) / 5.0 if isinstance(answer["citations"], list) else 0.0},
         "governance": {"regulatory_source": DEMO_SOURCE.source_id, "authority": DEMO_SOURCE.authority.value, "decision_support_only": True},
     }
