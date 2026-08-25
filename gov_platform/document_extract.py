@@ -4,7 +4,6 @@ Text extraction is performed from supplied bytes. OCR is an opt-in executable
 integration and is never treated as authoritative. Unsupported or malformed
 files fail closed.
 """
-from __future__ import annotations
 
 import dataclasses
 import hashlib
