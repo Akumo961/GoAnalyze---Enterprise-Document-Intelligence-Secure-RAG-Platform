@@ -1,9 +1,4 @@
-"""Authentication dependency for the government API.
-
-Production requests require a signed Keycloak OIDC JWT. Local tests may opt
-into the existing explicitly named insecure-development mode; that mode is
-rejected by Settings in production.
-"""
+"""Authentication dependency for the government API."""
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -53,12 +48,17 @@ def _identity_from_claims(claims: dict[str, Any]) -> ApiIdentity:
     return ApiIdentity(subject=subject, tenant_id=tenant_id, roles=roles)
 
 
-async def require_identity(
-    authorization: str | None = Header(None),
-    x_dev_tenant_id: str | None = Header(None),
-    x_dev_subject: str | None = Header(None),
-    x_dev_roles: str | None = Header(None),
+async def authenticate(
+    authorization: str | None = None,
+    x_dev_tenant_id: str | None = None,
+    x_dev_subject: str | None = None,
+    x_dev_roles: str | None = None,
 ) -> ApiIdentity:
+    """Authenticate normalized header values.
+
+    Keeping header extraction outside this function makes direct unit tests
+    deterministic while the FastAPI adapter below remains the HTTP boundary.
+    """
     settings = get_settings()
     if settings.allow_insecure_dev_auth:
         if not x_dev_tenant_id or not x_dev_subject:
@@ -86,6 +86,15 @@ async def require_identity(
     except (jwt.PyJWKError, jwt.PyJWTError, httpx.HTTPError) as exc:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="invalid_token") from exc
     return _identity_from_claims(claims)
+
+
+async def require_identity(
+    authorization: str | None = Header(default=None),
+    x_dev_tenant_id: str | None = Header(default=None),
+    x_dev_subject: str | None = Header(default=None),
+    x_dev_roles: str | None = Header(default=None),
+) -> ApiIdentity:
+    return await authenticate(authorization, x_dev_tenant_id, x_dev_subject, x_dev_roles)
 
 
 def require_role(*allowed: str):
