@@ -7,11 +7,17 @@ authority or correctness.
 from __future__ import annotations
 
 from datetime import date
-from sqlalchemy import Boolean, Date, Index, JSON, String
+
+from sqlalchemy import JSON, Boolean, Date, Index, String
 from sqlalchemy.orm import Mapped, mapped_column
 
+from ..regulatory_knowledge import (
+    KnowledgeType,
+    RegulatoryObligation,
+    RegulatorySource,
+    SourceAuthority,
+)
 from .models import Base
-from ..regulatory_knowledge import KnowledgeType, RegulatoryObligation, RegulatorySource, SourceAuthority
 
 
 class RegulatorySourceORM(Base):
