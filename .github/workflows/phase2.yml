@@ -1,0 +1,28 @@
+name: Phase 2 Acceptance
+
+on:
+  push:
+    branches: [government-hardening-2026-08, phase2-rag-2026-08]
+  pull_request:
+    branches: [government-hardening-2026-08, main]
+
+jobs:
+  phase2:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Install backend dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      - name: Phase 2 tests
+        run: pytest tests/test_phase2_rag_security.py tests/test_phase2_document_extract.py -q
+      - name: Phase 2 offline benchmark
+        run: python scripts/run_phase2_eval.py
+      - name: Validate Python quality
+        run: |
+          ruff check gov_platform/rag_engine.py gov_platform/document_extract.py gov_platform/ai_security.py tests/test_phase2_rag_security.py tests/test_phase2_document_extract.py scripts/run_phase2_eval.py
+          mypy gov_platform/rag_engine.py gov_platform/document_extract.py gov_platform/ai_security.py
