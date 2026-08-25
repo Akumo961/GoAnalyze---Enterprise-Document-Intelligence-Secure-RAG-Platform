@@ -19,10 +19,10 @@ jobs:
           python -m pip install --upgrade pip
           pip install -e '.[dev,documents]'
       - name: Phase 2 tests
-        run: pytest tests/test_phase2_rag_security.py tests/test_phase2_document_extract.py -q
+        run: pytest tests/test_phase2_rag_security.py tests/test_phase2_document_extract.py tests/test_phase2_pipeline.py -q
       - name: Phase 2 offline benchmark
         run: python scripts/run_phase2_eval.py
       - name: Validate Python quality
         run: |
-          ruff check gov_platform/rag_engine.py gov_platform/document_extract.py gov_platform/ai_security.py tests/test_phase2_rag_security.py tests/test_phase2_document_extract.py scripts/run_phase2_eval.py
-          mypy gov_platform/rag_engine.py gov_platform/document_extract.py gov_platform/ai_security.py
+          ruff check gov_platform/rag_engine.py gov_platform/document_extract.py gov_platform/ai_security.py gov_platform/rag_index.py gov_platform/phase2_pipeline.py gov_platform/rag_config.py tests/test_phase2_rag_security.py tests/test_phase2_document_extract.py tests/test_phase2_pipeline.py scripts/run_phase2_eval.py
+          mypy gov_platform/rag_engine.py gov_platform/document_extract.py gov_platform/ai_security.py gov_platform/rag_index.py gov_platform/phase2_pipeline.py gov_platform/rag_config.py
