@@ -66,4 +66,4 @@ def test_retention_due_is_timezone_aware() -> None:
     created = datetime.now(UTC) - timedelta(days=31)
     assert deletion_due(created, policy)
     with pytest.raises(ValueError):
-        deletion_due(datetime.now(), policy)
+        deletion_due(datetime.now(UTC).replace(tzinfo=None), policy)
