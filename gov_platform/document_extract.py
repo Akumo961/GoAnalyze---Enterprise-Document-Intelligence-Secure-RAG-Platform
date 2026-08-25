@@ -48,6 +48,7 @@ def extract_text(data: bytes, content_type: str) -> ExtractedDocument:
     if content_type == "application/pdf":
         try:
             from pypdf import PdfReader
+
             reader = PdfReader(io.BytesIO(data), strict=False)
             text = "\n".join(page.extract_text() or "" for page in reader.pages)
             return ExtractedDocument(digest, text, "pdf-text", len(reader.pages))
@@ -56,6 +57,7 @@ def extract_text(data: bytes, content_type: str) -> ExtractedDocument:
     if content_type.endswith("wordprocessingml.document"):
         try:
             from docx import Document
+
             doc = Document(io.BytesIO(data))
             text = "\n".join(p.text for p in doc.paragraphs)
             return ExtractedDocument(digest, text, "docx-text", None)
