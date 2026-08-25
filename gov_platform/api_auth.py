@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from functools import lru_cache
-from typing import Annotated, Any
+from typing import Any
 
 import httpx
 import jwt
@@ -22,12 +22,6 @@ class ApiIdentity:
     subject: str
     tenant_id: str
     roles: frozenset[str]
-
-
-AuthorizationHeader = Annotated[str | None, Header(default=None)]
-DevTenantHeader = Annotated[str | None, Header(default=None)]
-DevSubjectHeader = Annotated[str | None, Header(default=None)]
-DevRolesHeader = Annotated[str | None, Header(default=None)]
 
 
 def _jwks_url() -> str:
@@ -60,10 +54,10 @@ def _identity_from_claims(claims: dict[str, Any]) -> ApiIdentity:
 
 
 async def require_identity(
-    authorization: AuthorizationHeader = None,
-    x_dev_tenant_id: DevTenantHeader = None,
-    x_dev_subject: DevSubjectHeader = None,
-    x_dev_roles: DevRolesHeader = None,
+    authorization: str | None = Header(None),
+    x_dev_tenant_id: str | None = Header(None),
+    x_dev_subject: str | None = Header(None),
+    x_dev_roles: str | None = Header(None),
 ) -> ApiIdentity:
     settings = get_settings()
     if settings.allow_insecure_dev_auth:
