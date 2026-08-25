@@ -1,6 +1,6 @@
 from gov_platform.phase1_demo import (
-    assign_analyst,
     assess_priority,
+    assign_analyst,
     build_demo_case,
     completeness,
     grounded_question,
