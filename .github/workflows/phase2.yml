@@ -2,15 +2,26 @@ name: Phase 2 Acceptance
 
 on:
   push:
-    branches: [government-hardening-2026-08, phase2-rag-2026-08]
+    branches:
+      - phase2-rag-2026-08
   pull_request:
-    branches: [government-hardening-2026-08, main]
+    branches:
+      - main
+      - phase2-rag-2026-08
+  workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
   phase2:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - name: Checkout exact commit under test
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
