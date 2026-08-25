@@ -5,13 +5,14 @@ integration and is never treated as authoritative. Unsupported or malformed
 files fail closed.
 """
 
+from __future__ import annotations
+
 import dataclasses
 import hashlib
 import io
 import os
 import subprocess
 import tempfile
-
 
 MAX_DOCUMENT_BYTES = 50 * 1024 * 1024
 ALLOWED_CONTENT_TYPES = {
