@@ -2,13 +2,13 @@
 
 ## Scope
 
-Phase 3 turns the Phase 1/2 evidence pipeline into reusable government workflow primitives without claiming production legal compliance or authoritative Québec regulatory content.
+Phase 3 adds reusable government decision-support primitives without claiming production legal compliance or authoritative Québec regulatory content.
 
 ### Implemented
 - Versioned regulatory knowledge schema for laws, regulations, policies, directives, permit conditions, and guidance.
 - Jurisdiction/date filtering for active obligations.
-- Human-controlled case state machine with explicit approval/rejection transitions.
-- Tamper-evident SHA-256 audit event chaining and verification.
+- Human-controlled case state machine with explicit decision-officer approval/rejection boundary.
+- Tamper-evident SHA-256 audit event chaining and verification using the existing Pydantic audit model.
 - Retention-policy and deletion-due primitives with timezone validation.
 - Automated Phase 3 unit tests.
 
@@ -16,11 +16,11 @@ Phase 3 turns the Phase 1/2 evidence pipeline into reusable government workflow 
 - Regulatory records are customer-loaded data; the repository does not assert that demo content is authoritative Québec law.
 - Retention primitives do not by themselves constitute legal retention compliance; policy enforcement, legal hold storage, and deletion execution remain deployment responsibilities.
 - Audit hashes provide tamper evidence, not an independent immutable ledger or external audit certification.
-- Workflow approval remains a human action; no legally binding environmental decision is automated.
+- Workflow approval remains a human action by an explicitly identified decision-officer role; no legally binding environmental decision is automated.
 
 ## Acceptance criteria
 
-A Phase 3 acceptance run must execute the Phase 3 tests, the full Python test suite, Ruff, and mypy. A green result is evidence for the tested commit only.
+The Phase 3 acceptance workflow must execute Phase 3 tests, the full Python test suite, Ruff, and mypy against the exact commit under test. A green result is evidence for the tested commit only.
 
 ## Next phase boundary
 
