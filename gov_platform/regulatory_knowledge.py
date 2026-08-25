@@ -1,39 +1,36 @@
-"""Regulatory knowledge primitives.
+"""Versioned regulatory knowledge primitives.
 
-This module deliberately contains no invented Québec legal requirements.
-Authoritative content is customer-managed data and must carry provenance,
-version, jurisdiction, effective dates, and verification state before it can
-be used as a regulatory source.
+Authoritative legal content is external to the core platform. This module
+provides a schema and deterministic matching engine for customer-loaded,
+source-controlled regulatory knowledge.
 """
-
-from __future__ import annotations
-
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import date
 from enum import StrEnum
-from typing import Any
+from typing import Iterable
 
 
-class SourceAuthority(StrEnum):
-    authoritative = "authoritative"
-    customer_approved = "customer_approved"
-    demo = "demo"
-    unverified = "unverified"
+class KnowledgeType(StrEnum):
+    law = "law"
+    regulation = "regulation"
+    policy = "policy"
+    directive = "directive"
+    permit_condition = "permit_condition"
+    guidance = "guidance"
 
 
 @dataclass(frozen=True)
 class RegulatorySource:
     source_id: str
     title: str
-    authority: SourceAuthority
+    knowledge_type: KnowledgeType
     jurisdiction: str
     publisher: str
-    source_uri: str | None = None
-    version: str | None = None
+    authoritative: bool
+    source_uri: str
     effective_from: date | None = None
     effective_to: date | None = None
-    checksum: str | None = None
-    metadata: dict[str, Any] = field(default_factory=dict)
+    version: str = "1"
 
 
 @dataclass(frozen=True)
@@ -42,62 +39,28 @@ class RegulatoryObligation:
     source_id: str
     title: str
     description: str
-    evidence_requirements: tuple[str, ...] = ()
-    deadlines: tuple[str, ...] = ()
-    conditions: tuple[str, ...] = ()
+    evidence_types: tuple[str, ...]
+    jurisdiction: str
+    effective_from: date | None = None
+    effective_to: date | None = None
     exceptions: tuple[str, ...] = ()
-    jurisdiction: str | None = None
-    verified: bool = False
 
 
-@dataclass(frozen=True)
-class EvidenceMapping:
-    obligation_id: str
-    document_id: str
-    evidence_excerpt: str
-    confidence: float
-    verified_by_human: bool = False
-
-
-def source_is_usable(source: RegulatorySource) -> bool:
-    """Only approved/authoritative sources may drive regulatory assertions."""
-    return source.authority in {
-        SourceAuthority.authoritative,
-        SourceAuthority.customer_approved,
-    }
-
-
-def map_evidence(
-    obligation: RegulatoryObligation,
-    document_id: str,
-    excerpt: str,
-    confidence: float,
-) -> EvidenceMapping:
-    if not obligation.verified:
-        raise ValueError("unverified_regulatory_obligation")
-    if not excerpt.strip():
-        raise ValueError("empty_evidence_excerpt")
-    if not 0 <= confidence <= 1:
-        raise ValueError("confidence_out_of_range")
-    return EvidenceMapping(
-        obligation_id=obligation.obligation_id,
-        document_id=document_id,
-        evidence_excerpt=excerpt[:4000],
-        confidence=confidence,
+def active_on(item: RegulatorySource | RegulatoryObligation, when: date) -> bool:
+    return (item.effective_from is None or item.effective_from <= when) and (
+        item.effective_to is None or when <= item.effective_to
     )
 
 
-DEMO_SOURCES: tuple[RegulatorySource, ...] = ()
-DEMO_OBLIGATIONS: tuple[RegulatoryObligation, ...] = ()
-
-
-__all__ = [
-    "DEMO_OBLIGATIONS",
-    "DEMO_SOURCES",
-    "EvidenceMapping",
-    "RegulatoryObligation",
-    "RegulatorySource",
-    "SourceAuthority",
-    "map_evidence",
-    "source_is_usable",
-]
+def obligations_for(
+    obligations: Iterable[RegulatoryObligation],
+    *,
+    jurisdiction: str,
+    when: date,
+) -> list[RegulatoryObligation]:
+    """Return only active obligations for the requested jurisdiction."""
+    return [
+        obligation
+        for obligation in obligations
+        if obligation.jurisdiction == jurisdiction and active_on(obligation, when)
+    ]
