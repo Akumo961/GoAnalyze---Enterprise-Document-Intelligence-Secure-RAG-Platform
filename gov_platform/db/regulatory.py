@@ -16,12 +16,10 @@ from ..regulatory_knowledge import KnowledgeType, RegulatoryObligation, Regulato
 
 class RegulatorySourceORM(Base):
     __tablename__ = "regulatory_sources"
-    __table_args__ = (
-        Index("ix_regulatory_sources_jurisdiction", "jurisdiction"),
-        Index("ix_regulatory_sources_source_id_version", "source_id", "version", unique=True),
-    )
+    __table_args__ = (Index("ix_regulatory_sources_jurisdiction", "jurisdiction"),)
 
     source_id: Mapped[str] = mapped_column(String(255), primary_key=True)
+    version: Mapped[str] = mapped_column(String(64), primary_key=True)
     title: Mapped[str] = mapped_column(String(1024), nullable=False)
     knowledge_type: Mapped[str] = mapped_column(String(64), nullable=False)
     jurisdiction: Mapped[str] = mapped_column(String(255), nullable=False)
@@ -31,7 +29,6 @@ class RegulatorySourceORM(Base):
     source_uri: Mapped[str] = mapped_column(String(2048), nullable=False)
     effective_from: Mapped[date | None] = mapped_column(Date, nullable=True)
     effective_to: Mapped[date | None] = mapped_column(Date, nullable=True)
-    version: Mapped[str] = mapped_column(String(64), nullable=False, default="1")
 
 
 class RegulatoryObligationORM(Base):
@@ -56,6 +53,7 @@ class RegulatoryObligationORM(Base):
 def source_to_orm(source: RegulatorySource) -> RegulatorySourceORM:
     return RegulatorySourceORM(
         source_id=source.source_id,
+        version=source.version,
         title=source.title,
         knowledge_type=source.knowledge_type.value,
         jurisdiction=source.jurisdiction,
@@ -65,7 +63,6 @@ def source_to_orm(source: RegulatorySource) -> RegulatorySourceORM:
         source_uri=source.source_uri,
         effective_from=source.effective_from,
         effective_to=source.effective_to,
-        version=source.version,
     )
 
 
