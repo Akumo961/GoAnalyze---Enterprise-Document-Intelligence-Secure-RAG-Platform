@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from datetime import date
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -28,14 +29,29 @@ class RegulatoryKnowledgeRepository:
             self._session.add(source_to_orm(source))
         else:
             for field in (
-                "title", "knowledge_type", "jurisdiction", "publisher", "authority",
-                "authoritative", "source_uri", "effective_from", "effective_to",
+                "title",
+                "knowledge_type",
+                "jurisdiction",
+                "publisher",
+                "authority",
+                "authoritative",
+                "source_uri",
+                "effective_from",
+                "effective_to",
             ):
-                setattr(existing, field, getattr(source, field).value if field in {"knowledge_type", "authority"} else getattr(source, field))
+                setattr(
+                    existing,
+                    field,
+                    getattr(source, field).value
+                    if field in {"knowledge_type", "authority"}
+                    else getattr(source, field),
+                )
         await self._session.commit()
         return source
 
-    async def add_obligation(self, obligation: RegulatoryObligation) -> RegulatoryObligation:
+    async def add_obligation(
+        self, obligation: RegulatoryObligation
+    ) -> RegulatoryObligation:
         self._session.add(obligation_to_orm(obligation))
         await self._session.commit()
         return obligation
