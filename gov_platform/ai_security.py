@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+
 from .rag_engine import contains_prompt_injection
 
 
@@ -21,6 +22,7 @@ def sanitize_untrusted_document(text: str) -> str:
 
 
 def evaluate_citations(answer: str, cited_document_ids: set[str], required_ids: set[str]) -> CitationEvaluation:
+    del answer
     if not required_ids:
         return CitationEvaluation(1.0, 0.0, 0, 0)
     cited = sum(1 for doc_id in required_ids if doc_id in cited_document_ids)
