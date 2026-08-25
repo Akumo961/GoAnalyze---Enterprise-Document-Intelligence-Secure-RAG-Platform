@@ -10,7 +10,7 @@ from dataclasses import dataclass
 
 from .document_extract import ExtractedDocument, extract_text
 from .models import EvidenceCitation
-from .rag_engine import RAGAnswer, ProductionRAG
+from .rag_engine import ProductionRAG, RAGAnswer
 from .rag_index import TenantScopedIndex
 
 
