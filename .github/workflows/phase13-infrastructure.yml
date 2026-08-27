@@ -1,0 +1,116 @@
+name: Phase 13 Infrastructure Validation
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  compose-validation:
+    name: Docker Compose validation and infrastructure smoke test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Validate application Compose model
+        env:
+          GOV_ENVIRONMENT: development
+          POSTGRES_USER: goanalyze
+          POSTGRES_PASSWORD: ci-compose-password
+          POSTGRES_DB: goanalyze
+          GOV_AUDIT_HASH_SECRET: ci-compose-audit-secret
+          OPENSEARCH_INITIAL_ADMIN_PASSWORD: ci-compose-opensearch-password
+          MINIO_ROOT_USER: ci-minio
+          MINIO_ROOT_PASSWORD: ci-minio-password
+          KEYCLOAK_ADMIN: ci-admin
+          KEYCLOAK_ADMIN_PASSWORD: ci-keycloak-password
+          GRAFANA_ADMIN_PASSWORD: ci-grafana-password
+        run: docker compose -f docker-compose.yml config --quiet
+
+      - name: Start infrastructure smoke topology
+        run: docker compose -f docker-compose.phase13.yml up -d --wait
+
+      - name: Verify all infrastructure services are healthy/running
+        run: |
+          docker compose -f docker-compose.phase13.yml ps
+          test "$(docker compose -f docker-compose.phase13.yml ps -q | wc -l)" -eq 6
+          docker compose -f docker-compose.phase13.yml ps --format json > phase13-compose-status.json
+
+      - name: Verify service-specific endpoints
+        run: |
+          docker compose -f docker-compose.phase13.yml run --rm --no-deps smoke-client sh -c 'printf "PostgreSQL and Redis are validated by their Docker healthchecks\n"'
+          docker compose -f docker-compose.phase13.yml run --rm --no-deps smoke-client curl -fsS 'http://opensearch:9200/_cluster/health?wait_for_status=yellow'
+          docker compose -f docker-compose.phase13.yml run --rm --no-deps smoke-client curl -fsS http://minio:9000/minio/health/live
+          docker compose -f docker-compose.phase13.yml run --rm --no-deps smoke-client sh -c 'for i in $(seq 1 30); do curl -fsS http://keycloak:9000/health/ready && exit 0; sleep 2; done; exit 1'
+          docker compose -f docker-compose.phase13.yml run --rm --no-deps smoke-client curl -fsS http://keycloak:8080/realms/master
+          docker compose -f docker-compose.phase13.yml run --rm --no-deps smoke-client curl -fsS http://otel-collector:13133/
+
+      - name: Collect service logs on failure
+        if: failure()
+        run: docker compose -f docker-compose.phase13.yml logs --no-color
+
+      - name: Tear down smoke topology
+        if: always()
+        run: docker compose -f docker-compose.phase13.yml down -v --remove-orphans
+
+  helm-validation:
+    name: Helm and Kubernetes manifest validation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: azure/setup-helm@v4
+        with:
+          version: v3.19.0
+      - name: Helm lint
+        run: helm lint helm/goanalyze-government
+      - name: Render Helm chart
+        run: helm template goanalyze-government helm/goanalyze-government > /tmp/goanalyze-rendered.yaml
+      - name: Validate rendered Kubernetes resources
+        run: |
+          curl -fsSL https://github.com/yannh/kubeconform/releases/download/v0.7.0/kubeconform-linux-amd64.tar.gz -o /tmp/kubeconform.tar.gz
+          tar -xzf /tmp/kubeconform.tar.gz -C /tmp
+          /tmp/kubeconform -strict -summary /tmp/goanalyze-rendered.yaml
+
+  terraform-validation:
+    name: Terraform validation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.13.0
+      - name: Terraform format check
+        working-directory: terraform
+        run: terraform fmt -check -recursive
+      - name: Terraform init without backend
+        working-directory: terraform
+        run: terraform init -backend=false -input=false
+      - name: Terraform validate
+        working-directory: terraform
+        run: terraform validate
+
+  nginx-validation:
+    name: Nginx edge configuration validation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Create ephemeral test certificate
+        run: |
+          mkdir -p /tmp/nginx-tls
+          openssl req -x509 -nodes -newkey rsa:2048 -days 1 \
+            -keyout /tmp/nginx-tls/privkey.pem \
+            -out /tmp/nginx-tls/fullchain.pem \
+            -subj '/CN=localhost'
+      - name: Validate Nginx configuration
+        run: |
+          docker run --rm \
+            --add-host api:127.0.0.1 \
+            --add-host frontend:127.0.0.1 \
+            -v "$PWD/nginx/nginx.conf:/etc/nginx/nginx.conf:ro" \
+            -v "/tmp/nginx-tls:/etc/nginx/tls:ro" \
+            nginx:1.27-alpine nginx -t
