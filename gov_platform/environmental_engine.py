@@ -8,7 +8,12 @@ requirements.
 """
 from uuid import UUID
 
-from .models import AIFinding, EnvironmentalReviewRequest, EnvironmentalReviewResult, EvidenceCitation
+from .models import (
+    AIFinding,
+    EnvironmentalReviewRequest,
+    EnvironmentalReviewResult,
+    EvidenceCitation,
+)
 from .regulatory import KnowledgeStatus, RegulatoryKnowledgeBase
 
 # These are workflow profiles, not legal requirements. A government deployment
@@ -71,9 +76,11 @@ class EnvironmentalAuthorizationEngine:
             )
 
         findings = self._compliance_findings(request.case_id, missing, citations)
-        risk_score = self._risk_score(missing, findings, has_verified_knowledge=any(
-            item.finding_type == "regulatory_obligation" for item in mappings
-        ))
+        risk_score = self._risk_score(
+            missing, findings, has_verified_knowledge=any(
+                item.finding_type == "regulatory_obligation" for item in mappings
+            )
+        )
         recommendation = self._recommendation(missing, risk_score)
         justification = self._justification(missing, risk_score, mappings)
         return EnvironmentalReviewResult(
