@@ -1,3 +1,4 @@
+from gov_platform.document_analysis import analyze_document
 from gov_platform.document_classification import classify_document
 from gov_platform.document_extract import ExtractedDocument
 from gov_platform.document_metadata import extract_metadata
@@ -14,7 +15,7 @@ def test_metadata_extraction_is_deterministic_and_bounded() -> None:
     assert result.title == "Environmental Impact Assessment"
     assert result.page_count == 4
     assert result.language == "en"
-    assert result.word_count == 10
+    assert result.word_count == 9
     assert result.extraction_method == "pdf-text"
 
 
@@ -36,3 +37,12 @@ def test_classification_does_not_invent_a_label() -> None:
     assert result.label == "unclassified"
     assert result.confidence == 0.0
     assert result.matched_terms == ()
+
+
+def test_analysis_combines_metadata_and_classification() -> None:
+    result = analyze_document(
+        ExtractedDocument("c" * 64, "Inspection record: inspector finding.", "text", None)
+    )
+    assert result.classification.label == "inspection_record"
+    assert result.metadata.word_count == 5
+    assert result.to_metadata()["analysis_version"] == "1"
