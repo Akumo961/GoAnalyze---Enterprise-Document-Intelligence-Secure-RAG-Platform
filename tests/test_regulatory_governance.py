@@ -3,7 +3,12 @@ from uuid import uuid4
 
 from gov_platform.environmental_engine import EnvironmentalAuthorizationEngine
 from gov_platform.models import EnvironmentalReviewRequest
-from gov_platform.regulatory import KnowledgeStatus, RegulatoryKnowledgeBase, RegulatoryObligation, RegulatorySource
+from gov_platform.regulatory import (
+    KnowledgeStatus,
+    RegulatoryKnowledgeBase,
+    RegulatoryObligation,
+    RegulatorySource,
+)
 
 
 def _request(jurisdiction: str) -> EnvironmentalReviewRequest:
