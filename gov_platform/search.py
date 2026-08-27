@@ -61,62 +61,57 @@ async def search(
         must.append({"term": {"content_type": content_type}})
 
     try:
-        try:
-            async with httpx.AsyncClient(base_url=settings.opensearch_url, timeout=3.0) as client:
-                response = await client.post(
-                    f"/{settings.opensearch_index}/_search",
-                    json={
-                        "query": {"bool": {"must": must}},
-                        "from": (page - 1) * page_size,
-                        "size": page_size,
-                        "highlight": {"fields": {"filename": {}}},
-                    },
-                )
-                response.raise_for_status()
-                payload = response.json()
+        async with httpx.AsyncClient(base_url=settings.opensearch_url, timeout=3.0) as client:
+            response = await client.post(
+                f"/{settings.opensearch_index}/_search",
+                json={
+                    "query": {"bool": {"must": must}},
+                    "from": (page - 1) * page_size,
+                    "size": page_size,
+                    "highlight": {"fields": {"filename": {}}},
+                },
+            )
+            response.raise_for_status()
+            payload = response.json()
 
-            hits = payload["hits"]["hits"]
-            total = payload["hits"]["total"]["value"]
-            results = [
-                SearchHit(
-                    document_id=hit["_id"],
-                    filename=hit["_source"]["filename"],
-                    content_type=hit["_source"]["content_type"],
-                    classification=hit["_source"]["classification"],
-                    score=hit.get("_score") or 0.0,
-                    highlight=" ".join(hit.get("highlight", {}).get("filename", [])) or None,
-                    created_at=hit["_source"]["created_at"],
-                )
-                for hit in hits
-            ]
-            SEARCH_REQUESTS.labels(backend="opensearch", status="success").inc()
-            return SearchResponse(query=query, total=total, page=page, page_size=page_size, backend="opensearch", results=results)
-        except Exception:
-            logger.info("OpenSearch unreachable, falling back to database search", exc_info=True)
-            try:
-                records, total = await DocumentRepository(session).search(
-                    tenant_id, query, page, page_size, classification=classification, content_type=content_type
-                )
-            except Exception:
-                SEARCH_REQUESTS.labels(backend="database_fallback", status="error").inc()
-                raise
-            results = [
-                SearchHit(
-                    document_id=record.id,
-                    filename=record.filename,
-                    content_type=record.content_type,
-                    classification=record.classification,
-                    score=1.0 if query and query.lower() in record.filename.lower() else 0.5,
-                    highlight=None,
-                    created_at=record.created_at,
-                )
-                for record in records
-            ]
-            SEARCH_REQUESTS.labels(backend="database_fallback", status="success").inc()
-            return SearchResponse(query=query, total=total, page=page, page_size=page_size, backend="database_fallback", results=results)
+        hits = payload["hits"]["hits"]
+        total = payload["hits"]["total"]["value"]
+        results = [
+            SearchHit(
+                document_id=hit["_id"],
+                filename=hit["_source"]["filename"],
+                content_type=hit["_source"]["content_type"],
+                classification=hit["_source"]["classification"],
+                score=hit.get("_score") or 0.0,
+                highlight=" ".join(hit.get("highlight", {}).get("filename", [])) or None,
+                created_at=hit["_source"]["created_at"],
+            )
+            for hit in hits
+        ]
+        SEARCH_REQUESTS.labels(backend="opensearch", status="success").inc()
+        return SearchResponse(query=query, total=total, page=page, page_size=page_size, backend="opensearch", results=results)
     except Exception:
-        # Database errors are counted above; this branch protects future code
-        # paths from silently losing an error metric.
-        raise
+        logger.info("OpenSearch unreachable, falling back to database search", exc_info=True)
+        try:
+            records, total = await DocumentRepository(session).search(
+                tenant_id, query, page, page_size, classification=classification, content_type=content_type
+            )
+        except Exception:
+            SEARCH_REQUESTS.labels(backend="database_fallback", status="error").inc()
+            raise
+        results = [
+            SearchHit(
+                document_id=record.id,
+                filename=record.filename,
+                content_type=record.content_type,
+                classification=record.classification,
+                score=1.0 if query and query.lower() in record.filename.lower() else 0.5,
+                highlight=None,
+                created_at=record.created_at,
+            )
+            for record in records
+        ]
+        SEARCH_REQUESTS.labels(backend="database_fallback", status="success").inc()
+        return SearchResponse(query=query, total=total, page=page, page_size=page_size, backend="database_fallback", results=results)
     finally:
         SEARCH_DURATION.observe(time.perf_counter() - started)
