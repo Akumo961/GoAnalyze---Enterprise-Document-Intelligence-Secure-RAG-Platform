@@ -16,7 +16,13 @@ from .db.document_repository import DocumentRepository
 from .db.session import get_session
 from .document_analysis_api import router as document_analysis_router
 from .document_processing_api import router as document_processing_router
-from .document_security import sanitize_filename, validate_content_type, validate_metadata, validate_object_uri, validate_sha256
+from .document_security import (
+    sanitize_filename,
+    validate_content_type,
+    validate_metadata,
+    validate_object_uri,
+    validate_sha256,
+)
 from .models import AuditEvent, ClassificationLevel
 
 
