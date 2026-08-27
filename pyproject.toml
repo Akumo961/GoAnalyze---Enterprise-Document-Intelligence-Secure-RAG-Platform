@@ -44,7 +44,7 @@ dev = [
   "aiosqlite>=0.20.0",
   "cryptography>=42.0.0",
   "fakeredis>=2.23.0",
-  "pip-audit>=2.7.0"
+  "pip-audit>=2.7.0",
 ]
 
 [tool.pytest.ini_options]
@@ -58,3 +58,6 @@ target-version = "py312"
 
 [tool.ruff.lint]
 ignore = ["B008"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["gov_platform"]
