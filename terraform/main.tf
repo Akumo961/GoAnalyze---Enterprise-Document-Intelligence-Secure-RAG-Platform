@@ -57,15 +57,15 @@ resource "kubernetes_namespace" "goanalyze" {
 }
 
 resource "helm_release" "goanalyze" {
-  name             = "goanalyze-government"
-  namespace        = kubernetes_namespace.goanalyze.metadata[0].name
-  chart            = "../helm/goanalyze-government"
-  create_namespace = false
-  atomic           = true
-  cleanup_on_fail  = true
-  wait             = true
-  wait_for_jobs    = true
-  timeout          = 900
+  name              = "goanalyze-government"
+  namespace         = kubernetes_namespace.goanalyze.metadata[0].name
+  chart             = "../helm/goanalyze-government"
+  create_namespace  = false
+  atomic            = true
+  cleanup_on_fail   = true
+  wait              = true
+  wait_for_jobs     = true
+  timeout           = 900
   dependency_update = false
 
   values = [
