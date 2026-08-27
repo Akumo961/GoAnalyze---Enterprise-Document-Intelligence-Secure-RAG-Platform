@@ -1,9 +1,8 @@
 """Validate GoAnalyze production configuration before deployment."""
 
-from gov_platform.config import get_settings
-from gov_platform.production_config import validate_startup_configuration
+from gov_platform import config, production_config
 
 
 if __name__ == "__main__":
-    validate_startup_configuration(get_settings())
+    production_config.validate_startup_configuration(config.get_settings())
     print("Production configuration validation: PASS")
