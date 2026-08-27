@@ -4,6 +4,23 @@ from gov_platform.config import Settings
 from gov_platform.production_config import ProductionConfigError, validate_production_config
 
 
+@pytest.fixture(autouse=True)
+def isolate_production_settings_from_host_environment(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Keep acceptance tests deterministic when CI has GOV_* variables configured."""
+    for name in (
+        "GOV_ENVIRONMENT",
+        "GOV_ALLOW_INSECURE_DEV_AUTH",
+        "GOV_AUDIT_HASH_SECRET",
+        "GOV_OTEL_TRACING_ENABLED",
+        "GOV_RATE_LIMIT_ENABLED",
+        "GOV_MINIO_SECURE",
+        "GOV_DATABASE_URL",
+        "GOV_REDIS_URL",
+        "GOV_OPENSEARCH_URL",
+    ):
+        monkeypatch.delenv(name, raising=False)
+
+
 def production_settings(**overrides: object) -> Settings:
     values: dict[str, object] = {
         "environment": "production",
