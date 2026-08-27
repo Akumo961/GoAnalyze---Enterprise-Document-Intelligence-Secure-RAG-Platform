@@ -81,7 +81,7 @@ jobs:
           output-file: goanalyze-phase19-sbom.json
 
       - name: Scan container
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@0.33.1
         with:
           image-ref: goanalyze:phase19
           format: table
