@@ -52,7 +52,7 @@ services:
       MINIO_ROOT_USER: phase13minio
       MINIO_ROOT_PASSWORD: phase13-minio-password-1!
     healthcheck:
-      test: ["CMD", "mc", "ready", "local"]
+      test: ["CMD-SHELL", "curl -fsS http://localhost:9000/minio/health/live || exit 1"]
       interval: 5s
       timeout: 3s
       retries: 20
@@ -65,7 +65,7 @@ services:
       KC_BOOTSTRAP_ADMIN_USERNAME: phase13admin
       KC_BOOTSTRAP_ADMIN_PASSWORD: phase13-keycloak-password-1!
     healthcheck:
-      test: ["CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/8080"]
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8080/realms/master || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 30
@@ -76,11 +76,6 @@ services:
     command: ["--config=/etc/otelcol-contrib/config.yaml"]
     volumes:
       - ./observability/otel-collector.yaml:/etc/otelcol-contrib/config.yaml:ro
-    healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:13133/ || exit 1"]
-      interval: 10s
-      timeout: 5s
-      retries: 20
     networks: [platform]
 
 networks:
