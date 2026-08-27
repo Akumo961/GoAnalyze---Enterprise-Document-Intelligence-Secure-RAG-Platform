@@ -44,5 +44,5 @@ def test_analysis_combines_metadata_and_classification() -> None:
         ExtractedDocument("c" * 64, "Inspection record: inspector finding.", "text", None)
     )
     assert result.classification.label == "inspection_record"
-    assert result.metadata.word_count == 5
+    assert result.metadata.word_count == 4
     assert result.to_metadata()["analysis_version"] == "1"
