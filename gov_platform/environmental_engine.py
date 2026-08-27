@@ -6,6 +6,7 @@ from .models import (
     EnvironmentalReviewResult,
     EvidenceCitation,
 )
+from .observability import CASES_REVIEWED, HUMAN_REVIEW_REQUIRED, RISK_SCORE, record_missing_evidence
 
 REQUIRED_DOCUMENTS_BY_PROJECT = {
     "industrial_discharge": {
@@ -58,6 +59,7 @@ class EnvironmentalAuthorizationEngine:
     ) -> EnvironmentalReviewResult:
         required = REQUIRED_DOCUMENTS_BY_PROJECT.get(request.project_type, {"application_form"})
         missing = sorted(required - available_document_types)
+        record_missing_evidence(len(missing))
         regulation_mappings = [
             AIFinding(
                 finding_type="regulation_mapping",
@@ -73,7 +75,7 @@ class EnvironmentalAuthorizationEngine:
         risk_score = self._risk_score(missing, compliance_findings)
         recommendation = self._recommendation(missing, risk_score)
         justification = self._justification(missing, risk_score, regulation_mappings)
-        return EnvironmentalReviewResult(
+        result = EnvironmentalReviewResult(
             case_id=request.case_id,
             admissible=len(missing) == 0,
             missing_documents=missing,
@@ -84,6 +86,10 @@ class EnvironmentalAuthorizationEngine:
             justification=justification,
             requires_human_review=True,
         )
+        CASES_REVIEWED.inc()
+        RISK_SCORE.observe(result.risk_score)
+        HUMAN_REVIEW_REQUIRED.labels(required="true").inc()
+        return result
 
     def _compliance_findings(
         self, case_id: UUID, missing: list[str], citations: list[EvidenceCitation]
@@ -135,4 +141,3 @@ class EnvironmentalAuthorizationEngine:
 
 
 engine = EnvironmentalAuthorizationEngine()
-
