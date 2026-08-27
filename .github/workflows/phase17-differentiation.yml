@@ -1,0 +1,73 @@
+name: Phase 17 — Demonstrable Differentiation Acceptance
+
+on:
+  push:
+    branches: [main, phase14-government-demo]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  differentiation-acceptance:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate Phase 17 differentiation evidence
+        shell: python
+        run: |
+          from pathlib import Path
+
+          path = Path("docs/DEMONSTRABLE_DIFFERENTIATION.md")
+          acceptance = Path("docs/PHASE17_ACCEPTANCE.md")
+          assert path.is_file(), f"Missing Phase 17 artifact: {path}"
+          assert acceptance.is_file(), f"Missing Phase 17 acceptance: {acceptance}"
+
+          text = path.read_text(encoding="utf-8")
+          acceptance_text = acceptance.read_text(encoding="utf-8")
+
+          required_sections = [
+              "Environmental regulatory workflows",
+              "Evidence traceability",
+              "Government security architecture",
+              "Human-in-the-loop decisions",
+              "Auditability",
+              "Regulatory knowledge",
+              "Deployment flexibility",
+              "Explainable AI",
+              "Measurable workflow value",
+              "Why this is different from generic RAG",
+              "Evidence hierarchy",
+              "Claims we deliberately do not make",
+              "Product moat to build during a pilot",
+          ]
+          for section in required_sections:
+              assert section in text, f"Missing differentiation section: {section}"
+
+          required_boundaries = [
+              "does not claim market superiority",
+              "has Québec government customers",
+              "has been approved by MELCCFP",
+              "is certified under any security or privacy standard",
+              "achieved a particular ROI",
+              "legally binding environmental decisions",
+          ]
+          for phrase in required_boundaries:
+              assert phrase in text, f"Missing explicit claim boundary: {phrase}"
+
+          acceptance_requirements = [
+              "Differentiation is product-specific",
+              "Differentiation is evidence-bounded",
+              "Generic-RAG comparison is architectural, not a superiority claim",
+              "Government decision-support boundary",
+              "No fabricated claims",
+              "Evidence hierarchy",
+              "Commercial proof plan",
+          ]
+          for phrase in acceptance_requirements:
+              assert phrase in acceptance_text, f"Missing acceptance criterion: {phrase}"
+
+          print("Phase 17 differentiation acceptance: PASS")
