@@ -2,8 +2,8 @@
 
 ``SearchService`` always attempts OpenSearch first (real integration,
 tenant-isolated via a mandatory server-side ``term`` filter on
-``tenant_id`` -- a caller's query can never override this). If OpenSearch
-is unreachable or not configured, it automatically falls back to a
+``tenant_id`` -- a caller's query can never override this). If OpenSearch is
+unreachable or not configured, it automatically falls back to a
 PostgreSQL/SQLite ``ILIKE`` search over the ``documents`` table via
 ``DocumentRepository.search`` so the API keeps working during an
 OpenSearch outage, at reduced (non-relevance-ranked) quality.
@@ -12,6 +12,7 @@ OpenSearch outage, at reduced (non-relevance-ranked) quality.
 from __future__ import annotations
 
 import logging
+import time
 from typing import Any
 
 import httpx
@@ -20,6 +21,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from .config import get_settings
 from .db.repositories import DocumentRepository
 from .models import ClassificationLevel, DocumentRecord, SearchHit, SearchResponse
+from .observability import SEARCH_DURATION, SEARCH_REQUESTS
 
 logger = logging.getLogger(__name__)
 
@@ -54,6 +56,7 @@ async def search(
     classification: str | None = None,
     content_type: str | None = None,
 ) -> SearchResponse:
+    started = time.perf_counter()
     page = max(page, 1)
     page_size = min(max(page_size, 1), 100)
 
@@ -94,6 +97,7 @@ async def search(
             )
             for hit in hits
         ]
+        SEARCH_REQUESTS.labels(backend="opensearch", status="success").inc()
         return SearchResponse(query=query, total=total, page=page, page_size=page_size, backend="opensearch", results=results)
     except Exception:
         logger.info("OpenSearch unreachable, falling back to database search", exc_info=True)
@@ -112,4 +116,10 @@ async def search(
             )
             for record in records
         ]
+        SEARCH_REQUESTS.labels(backend="database_fallback", status="success").inc()
         return SearchResponse(query=query, total=total, page=page, page_size=page_size, backend="database_fallback", results=results)
+    except Exception:
+        SEARCH_REQUESTS.labels(backend="unknown", status="error").inc()
+        raise
+    finally:
+        SEARCH_DURATION.observe(time.perf_counter() - started)
