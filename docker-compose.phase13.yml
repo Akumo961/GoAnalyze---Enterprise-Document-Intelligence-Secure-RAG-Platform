@@ -64,11 +64,9 @@ services:
     environment:
       KC_BOOTSTRAP_ADMIN_USERNAME: phase13admin
       KC_BOOTSTRAP_ADMIN_PASSWORD: phase13-keycloak-password-1!
-    healthcheck:
-      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8080/realms/master || exit 1"]
-      interval: 10s
-      timeout: 5s
-      retries: 30
+      KC_HEALTH_ENABLED: "true"
+    # The official Keycloak image intentionally omits curl. Readiness is
+    # validated externally by smoke-client against the management endpoint.
     networks: [platform]
 
   otel-collector:
