@@ -27,13 +27,21 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
+      redis:
+        image: redis:7-alpine
+        ports: ["6379:6379"]
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
       - name: Install dependencies
-        run: pip install -e ".[dev]" pytest-cov pip-audit
+        run: pip install -e ".[dev]" pytest-cov pip-audit bandit[toml]
       - name: pytest
         env:
           GOV_DATABASE_URL: postgresql+asyncpg://goanalyze:ci_test_password@localhost:5432/goanalyze
@@ -48,6 +56,8 @@ jobs:
         run: ruff check gov_platform tests migrations scripts
       - name: mypy
         run: mypy gov_platform --ignore-missing-imports
+      - name: Source security scan
+        run: bandit -r gov_platform -q
       - name: API validation
         run: python -c "from gov_platform.main import app; assert app.openapi(); assert app.openapi()['paths']"
       - name: Dependency scanning
