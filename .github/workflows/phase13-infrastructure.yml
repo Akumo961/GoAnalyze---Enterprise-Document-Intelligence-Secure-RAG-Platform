@@ -43,8 +43,7 @@ jobs:
 
       - name: Verify service-specific endpoints
         run: |
-          docker compose -f docker-compose.phase13.yml run --rm --no-deps smoke-client curl -fsS http://postgres:5432 || test $? -eq 52
-          docker compose -f docker-compose.phase13.yml run --rm --no-deps smoke-client sh -c 'printf "PING via TCP is validated by the container healthcheck; testing Redis HTTP is not applicable"'
+          docker compose -f docker-compose.phase13.yml run --rm --no-deps smoke-client sh -c 'printf "PostgreSQL and Redis are validated by their Docker healthchecks\n"'
           docker compose -f docker-compose.phase13.yml run --rm --no-deps smoke-client curl -fsS 'http://opensearch:9200/_cluster/health?wait_for_status=yellow'
           docker compose -f docker-compose.phase13.yml run --rm --no-deps smoke-client curl -fsS http://minio:9000/minio/health/live
           docker compose -f docker-compose.phase13.yml run --rm --no-deps smoke-client curl -fsS http://keycloak:8080/realms/master
