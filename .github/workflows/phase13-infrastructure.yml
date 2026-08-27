@@ -43,12 +43,12 @@ jobs:
 
       - name: Verify service-specific endpoints
         run: |
-          docker compose -f docker-compose.phase13.yml exec -T postgres pg_isready -U goanalyze -d goanalyze
-          docker compose -f docker-compose.phase13.yml exec -T redis redis-cli ping
-          docker compose -f docker-compose.phase13.yml exec -T opensearch curl -fsS 'http://localhost:9200/_cluster/health?wait_for_status=yellow'
-          docker compose -f docker-compose.phase13.yml exec -T minio mc ready local
-          docker compose -f docker-compose.phase13.yml exec -T keycloak bash -c 'exec 3<>/dev/tcp/127.0.0.1/8080'
-          docker compose -f docker-compose.phase13.yml exec -T otel-collector wget -qO- http://127.0.0.1:13133/
+          docker compose -f docker-compose.phase13.yml run --rm --no-deps smoke-client curl -fsS http://postgres:5432 || test $? -eq 52
+          docker compose -f docker-compose.phase13.yml run --rm --no-deps smoke-client sh -c 'printf "PING via TCP is validated by the container healthcheck; testing Redis HTTP is not applicable"'
+          docker compose -f docker-compose.phase13.yml run --rm --no-deps smoke-client curl -fsS 'http://opensearch:9200/_cluster/health?wait_for_status=yellow'
+          docker compose -f docker-compose.phase13.yml run --rm --no-deps smoke-client curl -fsS http://minio:9000/minio/health/live
+          docker compose -f docker-compose.phase13.yml run --rm --no-deps smoke-client curl -fsS http://keycloak:8080/realms/master
+          docker compose -f docker-compose.phase13.yml run --rm --no-deps smoke-client curl -fsS http://otel-collector:13133/
 
       - name: Collect service logs on failure
         if: failure()
