@@ -6,7 +6,12 @@ from .models import (
     EnvironmentalReviewResult,
     EvidenceCitation,
 )
-from .observability import CASES_REVIEWED, HUMAN_REVIEW_REQUIRED, RISK_SCORE, record_missing_evidence
+from .observability import (
+    CASES_REVIEWED,
+    HUMAN_REVIEW_REQUIRED,
+    RISK_SCORE,
+    record_missing_evidence,
+)
 
 REQUIRED_DOCUMENTS_BY_PROJECT = {
     "industrial_discharge": {
