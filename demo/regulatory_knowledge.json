@@ -1,0 +1,28 @@
+{
+  "status": "DEMO_ONLY_NOT_AUTHORITATIVE",
+  "jurisdiction": "QC-DEMO",
+  "sources": [
+    {
+      "source_id": "demo.environmental.source.v1",
+      "title": "Synthetic Environmental Review Knowledge Pack",
+      "publisher": "GoAnalyze demonstration environment",
+      "jurisdiction": "QC-DEMO",
+      "canonical_uri": "https://example.invalid/goanalyze/demo/regulatory-pack-v1",
+      "retrieved_on": "2026-08-27",
+      "status": "demo"
+    }
+  ],
+  "obligations": [
+    {
+      "obligation_id": "DEMO-ENV-001",
+      "title": "Synthetic application completeness evidence",
+      "description": "Demonstration-only obligation requiring the application package to contain the evidence types configured for the synthetic case.",
+      "source_id": "demo.environmental.source.v1",
+      "applicable_jurisdictions": ["QC-DEMO"],
+      "evidence_types": ["application_form", "site_plan", "technical_report"],
+      "deadline_days": null,
+      "exceptions": [],
+      "status": "demo"
+    }
+  ]
+}
