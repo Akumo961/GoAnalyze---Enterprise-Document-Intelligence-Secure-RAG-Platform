@@ -8,9 +8,11 @@ from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from .api_auth import ApiIdentity, require_role
+from .audit import audit_log
 from .db.document_repository import DocumentRepository
 from .db.session import get_session
 from .document_processing import MalwareScanner, RejectingScanner, process_document
+from .models import AuditEvent
 
 router = APIRouter(prefix="/v1/documents", tags=["document-processing"])
 
@@ -58,14 +60,33 @@ async def process_registered_document(
         )
     except ValueError as exc:
         detail = str(exc)
-        code = status.HTTP_422_UNPROCESSABLE_ENTITY
-        if detail == "malware_detected_or_scan_failed":
-            code = status.HTTP_422_UNPROCESSABLE_ENTITY
-        raise HTTPException(status_code=code, detail=detail) from exc
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=detail
+        ) from exc
     except RuntimeError as exc:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc)
         ) from exc
+
+    await audit_log.append(
+        session,
+        AuditEvent(
+            tenant_id=identity.tenant_id,
+            actor=identity.subject,
+            action="document.processed",
+            resource_type="document",
+            resource_id=str(document.id),
+            purpose="document_content_processing",
+            trace_id=f"document-process-{document.id}",
+            details={
+                "sha256": result.sha256,
+                "bytes_processed": result.bytes_processed,
+                "extraction_method": result.extraction.method,
+                "page_count": result.extraction.page_count,
+                "scanner": scanner.__class__.__name__,
+            },
+        ),
+    )
 
     return DocumentProcessingResponse(
         document_id=document.id,
