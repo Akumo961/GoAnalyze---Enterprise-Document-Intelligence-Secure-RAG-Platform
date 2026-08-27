@@ -13,10 +13,13 @@ FROM node:22-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 
+# Apply current Alpine security updates before constructing the runtime layer.
 # The runtime image contains only the Next.js standalone server and its
 # production dependency closure. Package managers and development tooling are
 # deliberately removed from the runtime attack surface.
-RUN rm -rf /usr/local/lib/node_modules/npm \
+RUN apk update \
+    && apk upgrade --no-cache \
+    && rm -rf /usr/local/lib/node_modules/npm \
     /usr/local/lib/node_modules/corepack \
     /opt/yarn* \
     /usr/local/bin/npm \
