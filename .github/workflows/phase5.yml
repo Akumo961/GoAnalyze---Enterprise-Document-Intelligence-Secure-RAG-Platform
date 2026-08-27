@@ -1,0 +1,36 @@
+name: Phase 5 Acceptance
+
+on:
+  push:
+    branches: [phase5-government-workflow-persistence-2026-08]
+  pull_request:
+    paths:
+      - 'gov_platform/db/**'
+      - 'migrations/**'
+      - 'tests/test_phase5_cases.py'
+      - 'PHASE5_ACCEPTANCE.md'
+      - '.github/workflows/phase5.yml'
+  workflow_dispatch:
+
+jobs:
+  phase5:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout exact commit under test
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Install project dependencies
+        run: python -m pip install -e ".[dev]"
+      - name: Phase 5 tests
+        run: pytest -q tests/test_phase5_cases.py
+      - name: Full Python tests
+        run: pytest -q
+      - name: Ruff
+        run: ruff check gov_platform tests migrations
+      - name: Mypy
+        run: mypy gov_platform --ignore-missing-imports
