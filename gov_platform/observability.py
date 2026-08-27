@@ -102,6 +102,13 @@ WORKFLOW_SLA_SECONDS = Histogram(
 )
 
 
+def record_human_decision(decision: str, *, override: bool = False) -> None:
+    """Record an aggregate human decision without storing case/customer data."""
+    HUMAN_DECISIONS.labels(decision=decision).inc()
+    if override:
+        HUMAN_OVERRIDES.inc()
+
+
 @contextmanager
 def observe_seconds(histogram: Histogram, *labels: str) -> Iterator[None]:
     """Observe a synchronous operation without retaining customer data."""
