@@ -56,7 +56,7 @@ class EvidenceCitation(BaseModel):
     page: int | None = None
     start_offset: int | None = None
     end_offset: int | None = None
-    sha256: str
+    sha256: str = Field(min_length=64, max_length=64)
     excerpt: str
 
 
@@ -193,5 +193,3 @@ class AuditEventListResponse(BaseModel):
     page_size: int
     total_pages: int
     items: list[AuditEvent] = Field(default_factory=list)
-
-
