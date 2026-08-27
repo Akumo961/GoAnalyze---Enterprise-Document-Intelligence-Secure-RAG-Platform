@@ -1,9 +1,5 @@
 """Validate GoAnalyze production configuration before deployment."""
 
-# ruff: noqa: I001
-# The single standard-library import below is already in canonical order.
-# Keep this scoped suppression because the current Ruff/isort resolution flags
-# the one-line block while its own suggested fix produces no semantic change.
 from importlib import import_module
 
 
