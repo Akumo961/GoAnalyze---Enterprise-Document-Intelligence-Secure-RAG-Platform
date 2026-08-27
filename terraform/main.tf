@@ -51,7 +51,7 @@ resource "kubernetes_namespace" "goanalyze" {
       "pod-security.kubernetes.io/enforce" = "restricted"
       "pod-security.kubernetes.io/audit"   = "restricted"
       "pod-security.kubernetes.io/warn"    = "restricted"
-      "app.kubernetes.io/part-of"           = "goanalyze-government"
+      "app.kubernetes.io/part-of"          = "goanalyze-government"
     }
   }
 }
@@ -60,12 +60,12 @@ resource "helm_release" "goanalyze" {
   name             = "goanalyze-government"
   namespace        = kubernetes_namespace.goanalyze.metadata[0].name
   chart            = "../helm/goanalyze-government"
-  create_namespace  = false
-  atomic            = true
-  cleanup_on_fail   = true
-  wait              = true
-  wait_for_jobs     = true
-  timeout           = 900
+  create_namespace = false
+  atomic           = true
+  cleanup_on_fail  = true
+  wait             = true
+  wait_for_jobs    = true
+  timeout          = 900
   dependency_update = false
 
   values = [
