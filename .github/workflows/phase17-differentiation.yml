@@ -71,3 +71,46 @@ jobs:
               assert phrase in acceptance_text, f"Missing acceptance criterion: {phrase}"
 
           print("Phase 17 differentiation acceptance: PASS")
+
+  phase18-repository-hygiene:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate authoritative Phase 18 readiness baseline
+        shell: python
+        run: |
+          from pathlib import Path
+
+          path = Path("FINAL_PRODUCTION_READINESS.md")
+          readme = Path("README.md")
+          assert path.is_file(), "Missing authoritative production readiness baseline"
+          assert readme.is_file(), "Missing README"
+
+          text = path.read_text(encoding="utf-8")
+          readme_text = readme.read_text(encoding="utf-8")
+
+          required = [
+              "Authoritative repository baseline for Phase 18",
+              "Status legend",
+              "Current baseline",
+              "Phase 18 repository cleanup",
+              "Deliberate limitations",
+              "Required evidence before government production go-live",
+              "Repository quality and evidence discipline: GREEN",
+              "Overall government production readiness: NOT GREEN",
+          ]
+          for phrase in required:
+              assert phrase in text, f"Missing Phase 18 readiness evidence: {phrase}"
+
+          forbidden_unqualified_claims = [
+              "government approval",
+              "certified",
+              "customer acceptance",
+          ]
+          for phrase in forbidden_unqualified_claims:
+              assert phrase in text, f"Readiness baseline must explicitly bound claim: {phrase}"
+
+          assert "FINAL_PRODUCTION_READINESS.md" in readme_text
+          print("Phase 18 repository hygiene acceptance: PASS")
