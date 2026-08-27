@@ -1,9 +1,24 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ include "goanalyze-government.serviceAccountName" . }}
+  labels:
+    app.kubernetes.io/name: goanalyze-government-api
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: goanalyze-government-api
+  labels:
+    app.kubernetes.io/name: goanalyze-government-api
+    app.kubernetes.io/part-of: goanalyze-government
 spec:
   replicas: {{ .Values.replicaCount }}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
   selector:
     matchLabels:
       app: goanalyze-government-api
@@ -11,14 +26,24 @@ spec:
     metadata:
       labels:
         app: goanalyze-government-api
+        app.kubernetes.io/part-of: goanalyze-government
     spec:
+      serviceAccountName: {{ include "goanalyze-government.serviceAccountName" . }}
+      automountServiceAccountToken: false
       securityContext:
-        runAsNonRoot: true
+{{ toYaml .Values.podSecurityContext | indent 8 }}
       containers:
         - name: api
           image: {{ .Values.image.api }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
           ports:
-            - containerPort: 8080
+            - name: http
+              containerPort: 8080
+          securityContext:
+{{ toYaml .Values.containerSecurityContext | indent 12 }}
+          envFrom:
+            - secretRef:
+                name: {{ .Values.api.existingSecret }}
           env:
             - name: GOV_KAFKA_BOOTSTRAP_SERVERS
               value: {{ .Values.externalServices.kafkaBootstrapServers | quote }}
@@ -26,25 +51,42 @@ spec:
               value: {{ .Values.externalServices.temporalHost | quote }}
             - name: GOV_KEYCLOAK_ISSUER
               value: {{ .Values.externalServices.keycloakIssuer | quote }}
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: {{ .Values.externalServices.otelEndpoint | quote }}
           resources:
 {{ toYaml .Values.resources.api | indent 12 }}
           readinessProbe:
             httpGet:
-              path: /health
-              port: 8080
+              path: {{ .Values.api.readinessPath }}
+              port: http
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 6
           livenessProbe:
             httpGet:
-              path: /health
-              port: 8080
+              path: {{ .Values.api.livenessPath }}
+              port: http
+            periodSeconds: 20
+            timeoutSeconds: 3
+            failureThreshold: 3
+          startupProbe:
+            httpGet:
+              path: {{ .Values.api.livenessPath }}
+              port: http
+            periodSeconds: 5
+            failureThreshold: 30
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: goanalyze-government-api
+  labels:
+    app.kubernetes.io/name: goanalyze-government-api
 spec:
+  type: ClusterIP
   selector:
     app: goanalyze-government-api
   ports:
-    - port: 8080
-      targetPort: 8080
-
+    - name: http
+      port: {{ .Values.api.servicePort }}
+      targetPort: http
