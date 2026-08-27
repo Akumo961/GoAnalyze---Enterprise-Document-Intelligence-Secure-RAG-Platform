@@ -2,7 +2,6 @@
 
 from importlib import import_module
 
-
 if __name__ == "__main__":
     config = import_module("gov_platform.config")
     production_config = import_module("gov_platform.production_config")
