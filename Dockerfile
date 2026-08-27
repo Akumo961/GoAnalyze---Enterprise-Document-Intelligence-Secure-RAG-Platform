@@ -15,10 +15,15 @@ COPY gov_platform /app/gov_platform
 COPY alembic.ini /app/
 COPY migrations /app/migrations
 
+# Every dependency here, including confluent-kafka, ships a prebuilt
+# manylinux wheel for cp312 -- on this glibc base pip installs those
+# directly and no compiler or system librdkafka is needed to build
+# anything from source. (See Dockerfile.production for the full
+# explanation of why that matters on musl/Alpine, where no such wheel
+# exists and this used to matter a great deal.)
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends gcc librdkafka-dev \
+    && apt-get install --no-install-recommends -y ca-certificates \
     && pip install . \
-    && apt-get purge -y --auto-remove gcc librdkafka-dev \
     && rm -rf /var/lib/apt/lists/* /root/.cache /tmp/*
 
 USER 65532:65532
