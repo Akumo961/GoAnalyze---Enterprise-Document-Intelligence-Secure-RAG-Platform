@@ -77,9 +77,11 @@ class EnvironmentalAuthorizationEngine:
 
         findings = self._compliance_findings(request.case_id, missing, citations)
         risk_score = self._risk_score(
-            missing, findings, has_verified_knowledge=any(
+            missing,
+            findings,
+            has_verified_knowledge=any(
                 item.finding_type == "regulatory_obligation" for item in mappings
-            )
+            ),
         )
         recommendation = self._recommendation(missing, risk_score)
         justification = self._justification(missing, risk_score, mappings)
@@ -95,7 +97,9 @@ class EnvironmentalAuthorizationEngine:
             requires_human_review=True,
         )
 
-    def _compliance_findings(self, case_id: UUID, missing: list[str], citations: list[EvidenceCitation]) -> list[AIFinding]:
+    def _compliance_findings(
+        self, case_id: UUID, missing: list[str], citations: list[EvidenceCitation]
+    ) -> list[AIFinding]:
         if missing:
             return [
                 AIFinding(
@@ -119,7 +123,9 @@ class EnvironmentalAuthorizationEngine:
             )
         ]
 
-    def _risk_score(self, missing: list[str], findings: list[AIFinding], *, has_verified_knowledge: bool) -> float:
+    def _risk_score(
+        self, missing: list[str], findings: list[AIFinding], *, has_verified_knowledge: bool
+    ) -> float:
         base = 25.0
         missing_penalty = min(45.0, len(missing) * 9.0)
         confidence_penalty = sum(1.0 - finding.confidence for finding in findings) * 5.0
@@ -133,9 +139,15 @@ class EnvironmentalAuthorizationEngine:
             return "refer_to_senior_technical_review"
         return "proceed_to_technical_review"
 
-    def _justification(self, missing: list[str], risk_score: float, mappings: list[AIFinding]) -> str:
+    def _justification(
+        self, missing: list[str], risk_score: float, mappings: list[AIFinding]
+    ) -> str:
         mapped = "; ".join(mapping.statement for mapping in mappings)
-        prefix = f"{len(missing)} configured evidence item(s) are absent." if missing else "Configured evidence is complete."
+        prefix = (
+            f"{len(missing)} configured evidence item(s) are absent."
+            if missing
+            else "Configured evidence is complete."
+        )
         return f"{prefix} Regulatory knowledge state: {mapped}. Risk score: {risk_score}. Human review remains mandatory."
 
 
