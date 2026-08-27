@@ -1,15 +1,15 @@
 """Run the GoAnalyze Government synthetic environmental-review demonstration.
 
-This runner deliberately exercises the real domain models, ingestion pipeline,
-grounded RAG service, environmental review engine, assignment engine, and
-hash-chained audit log against an ephemeral SQLite database. No network,
-external LLM, government system, or authoritative regulatory source is used.
+The runner exercises real GoAnalyze components against an ephemeral SQLite
+store: document persistence, the ingestion pipeline, grounded RAG, the
+environmental review engine, analyst assignment, and the tamper-evident audit
+log. It is intentionally offline and uses synthetic, non-authoritative data.
 
-Usage:
+Usage from the repository root:
     python demo/run_demo.py
 
-The generated JSON report is evidence of this demo execution only; it is not
-production validation and contains synthetic data.
+The generated ``last_run.json`` is execution evidence for this demo only. It
+must not be represented as production, legal, security, or regulatory proof.
 """
 
 from __future__ import annotations
@@ -22,8 +22,6 @@ import tempfile
 from pathlib import Path
 from uuid import UUID
 
-# Keep the demo self-contained and offline. Settings are read when the GoAnalyze
-# modules are imported, so environment variables must be established first.
 DB_FILE = Path(tempfile.gettempdir()) / "goanalyze_phase14_demo.sqlite3"
 os.environ.setdefault("GOV_ENVIRONMENT", "development")
 os.environ.setdefault("GOV_DATABASE_URL", f"sqlite+aiosqlite:///{DB_FILE}")
@@ -44,31 +42,32 @@ ROOT = Path(__file__).resolve().parent
 DATASET = ROOT / "synthetic_case.json"
 REPORT = ROOT / "last_run.json"
 TENANT = "demo-melccfp-01"
-ACTOR = "demo-analyst-01"
 CASE_ID = UUID("00000000-0000-4000-8000-000000000014")
 
 
 async def main() -> None:
     dataset = json.loads(DATASET.read_text(encoding="utf-8"))
-    if dataset["authoritativeness"] != "synthetic_non_authoritative":
-        raise RuntimeError("Demo dataset must remain explicitly non-authoritative")
+    if dataset.get("authoritativeness") != "synthetic_non_authoritative":
+        raise RuntimeError("Demo dataset must be explicitly non-authoritative")
 
     if DB_FILE.exists():
         DB_FILE.unlink()
 
-    engine_db = get_engine()
-    async with engine_db.begin() as connection:
+    async with get_engine().begin() as connection:
         await connection.run_sync(Base.metadata.create_all)
 
     sessionmaker = get_sessionmaker()
     processed: list[dict] = []
+    content_by_filename = {item["filename"]: item["content"] for item in dataset["documents"]}
 
     async with sessionmaker() as session:
         document_ids: list[UUID] = []
         available_types: set[str] = set()
 
-        # 1-3: register, extract/classify/metadata-process, and index synthetic documents.
+        # 1. Securely register and process the supplied synthetic documents.
         for item in dataset["documents"]:
+            if not item.get("included_in_case", True):
+                continue
             content = item["content"]
             digest = hashlib.sha256(content.encode("utf-8")).hexdigest()
             record = DocumentRecord(
@@ -90,7 +89,7 @@ async def main() -> None:
             await DocumentRepository(session).create(record)
             result = await ingestion_pipeline.run(
                 record=record,
-                actor=ACTOR,
+                actor="demo-system",
                 trace_id=f"phase14-{record.id}",
                 purpose="synthetic-demo",
                 session=session,
@@ -111,40 +110,26 @@ async def main() -> None:
                 }
             )
 
-        # 4-8: search is represented by the real citation objects and grounded RAG service.
-        citations = [
-            EvidenceCitation(
-                document_id=doc_id,
-                version=1,
-                chunk_id=f"{doc_id}:demo",
-                sha256=next(
-                    item["sha256"] for item in processed if item["document_id"] == str(doc_id)
-                )
-                if False
-                else "0" * 64,
-                excerpt=next(item["filename"] for item in processed if item["document_id"] == str(doc_id)),
-            )
-            for doc_id in document_ids[:3]
-        ]
-        # Citation hashes above are intentionally placeholders for the first RAG demonstration;
-        # replace them with persisted document hashes before presenting the report.
         records = await DocumentRepository(session).get_many(document_ids)
+        citation_ids = document_ids[:3]
         citations = [
             EvidenceCitation(
                 document_id=doc_id,
                 version=records[doc_id].version,
                 chunk_id=f"{doc_id}:demo",
                 sha256=records[doc_id].sha256,
-                excerpt=next(item["content"] for item in dataset["documents"] if item["filename"] == records[doc_id].filename)[:600],
+                excerpt=content_by_filename[records[doc_id].filename][:600],
             )
-            for doc_id in document_ids[:3]
+            for doc_id in citation_ids
         ]
+
+        # 2. Search/retrieval evidence is represented by real document citations.
         rag_finding = rag_service.answer(
             "What evidence is present in the synthetic industrial discharge application?",
             citations,
         )
 
-        # 9-10: map evidence to the explicitly synthetic regulatory knowledge model and score risk.
+        # 3. Completeness, regulatory mapping and risk scoring use the real engine.
         review_request = EnvironmentalReviewRequest(
             tenant_id=TENANT,
             case_id=CASE_ID,
@@ -156,7 +141,7 @@ async def main() -> None:
         )
         review = engine.review(review_request, available_types, citations)
 
-        # 11: route the case to a human queue and persist the assignment.
+        # 4. Route the case to a human queue and persist the assignment.
         assignment = assignment_engine.assign(CASE_ID, "technical-review", {"demo-analyst-01": 1})
         await CaseRepository(session).create_assignment(
             case_id=CASE_ID,
@@ -168,7 +153,7 @@ async def main() -> None:
             escalation_at=assignment.escalation_at,
         )
 
-        # 12: record the human decision as an auditable event; the demo never auto-approves or rejects.
+        # 5. Human decision is explicitly recorded as an audit event. No autonomous decision is made.
         decision = dataset["human_decision"]
         human_event = await audit_log.append(
             session,
@@ -184,7 +169,6 @@ async def main() -> None:
             ),
         )
         await session.commit()
-
         audit_events, _ = await audit_log.list_events_paginated(session, TENANT, 1, 200)
 
     report = {
