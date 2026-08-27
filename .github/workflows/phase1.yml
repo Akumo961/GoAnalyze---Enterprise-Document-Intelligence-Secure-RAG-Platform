@@ -1,0 +1,44 @@
+name: Phase 1 Acceptance
+
+on:
+  push:
+    branches:
+      - government-hardening-2026-08
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  phase1:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Install backend dependencies
+        run: pip install -e ".[dev]"
+      - name: Phase 1 acceptance tests
+        run: python -m pytest tests/test_phase1_demo.py -v
+      - name: Run reproducible Phase 1 demo
+        run: python scripts/run_phase1_demo.py > phase1-demo-result.json
+      - name: Validate demo result
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          result = json.loads(Path("phase1-demo-result.json").read_text())
+          assert result["case"]["document_count"] == 10
+          assert result["metrics"]["documents_processed"] == 10
+          assert result["governance"]["authority"] == "demo"
+          assert result["governance"]["decision_support_only"] is True
+          assert result["audit"][-1]["action"] == "demo.completed"
+          assert result["decision"]["human_decision"] is True
+          print("Phase 1 acceptance: PASS")
+          PY
+      - name: Upload Phase 1 evidence
+        uses: actions/upload-artifact@v6
+        with:
+          name: phase1-demo-evidence
+          path: phase1-demo-result.json
