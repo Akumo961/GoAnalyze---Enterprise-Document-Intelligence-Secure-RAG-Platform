@@ -7,31 +7,22 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
-# Apply all security updates available from the Debian repositories.
-# Do not force individual package versions: Debian may not yet provide
-# a fixed version for every CVE reported by vulnerability scanners.
 RUN apt-get update \
     && apt-get upgrade -y \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
-# Install the application metadata first for better Docker layer caching.
 COPY pyproject.toml /app/
-
-# Copy application source and database migration configuration.
 COPY gov_platform /app/gov_platform
 COPY alembic.ini /app/
 COPY migrations /app/migrations
 
-# Install GoAnalyze and its Python dependencies.
 RUN pip install .
 
-# Run the application as a non-root user.
 USER 65532:65532
 
 EXPOSE 8080
 
-# Container readiness check.
 HEALTHCHECK \
     --interval=15s \
     --timeout=5s \
