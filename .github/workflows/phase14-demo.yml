@@ -22,8 +22,8 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Install application and development dependencies
-        run: python -m pip install -e ".[dev]"
+      - name: Install application dependencies required by the offline demo
+        run: python -m pip install -e . aiosqlite
 
       - name: Run Phase 14 synthetic demonstration
         run: python demo/run_demo.py
