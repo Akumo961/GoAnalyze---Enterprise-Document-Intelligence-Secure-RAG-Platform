@@ -1,367 +1,94 @@
-# GoAnalyze — Enterprise Document Intelligence Platform
+# GoAnalyze Government
 
+Secure environmental document intelligence and AI-assisted decision support for government workflows.
 
-> Secure AI-powered document analysis and intelligence platform for processing, searching, analyzing, and auditing sensitive documents.
+> **Evidence-first positioning:** this repository contains a substantial enterprise application foundation, but it is not presented as government-certified, production-approved, or procurement-approved. Capabilities are classified by evidence in [`PRODUCTION_READINESS.md`](PRODUCTION_READINESS.md).
 
+## Phase 1 pilot
 
-**RAG** · **LLM** · **Document Intelligence** · **Multi-Tenant Architecture** · **RBAC/ABAC** · **Observability** · **Terraform** · **Kubernetes**
+A reproducible synthetic environmental pilot is now implemented. It demonstrates the complete decision-support storyline without inventing Québec legal requirements or requiring external services.
 
-
-## Overview
-
-
-GoAnalyze is an enterprise-oriented document intelligence platform designed to securely process and analyze sensitive documents.
-
-
-The platform combines document processing, search, AI-powered analysis, access control, auditing, observability, and production infrastructure into a single system.
-
-
-## Engineering Highlights
-
-
-- Document ingestion and processing
-
-- AI-powered document analysis
-
-- Retrieval-Augmented Generation
-
-- Semantic search
-
-- Multi-tenant architecture
-
-- RBAC / ABAC authorization
-
-- Tenant isolation
-
-- Audit trails
-
-- Production Docker images
-
-- Kubernetes deployment through Helm
-
-- Infrastructure as Code with Terraform
-
-- Observability
-
-- Automated tests
-
-- Database migrations
-
-- Nginx / reverse proxy configuration
-
-
-## Architecture
-
-
-```text
-
-                    ┌─────────────────────┐
-
-                    │      Frontend       │
-
-                    │     Web Client      │
-
-                    └──────────┬──────────┘
-
-                               │
-
-                               ▼
-
-                    ┌─────────────────────┐
-
-                    │     Nginx / API     │
-
-                    └──────────┬──────────┘
-
-                               │
-
-                               ▼
-
-                    ┌─────────────────────┐
-
-                    │    Application      │
-
-                    │      Services       │
-
-                    └──────┬───────┬──────┘
-
-                           │       │
-
-                ┌──────────┘       └───────────┐
-
-                ▼                              ▼
-
-       ┌─────────────────┐             ┌─────────────────┐
-
-       │ Document / RAG  │             │ Authorization   │
-
-       │ Pipeline        │             │ RBAC / ABAC     │
-
-       └────────┬────────┘             └─────────────────┘
-
-                │
-
-                ▼
-
-       ┌─────────────────┐
-
-       │ Search / Vector │
-
-       │ Retrieval       │
-
-       └────────┬────────┘
-
-                │
-
-                ▼
-
-       ┌─────────────────┐
-
-       │ LLM Analysis    │
-
-       └─────────────────┘
-
+```bash
+python scripts/run_phase1_demo.py
 ```
 
+The pilot covers synthetic document intake, classification, completeness checking, evidence-grounded question answering with citations, explicitly DEMO regulatory mapping, priority assessment, analyst assignment, human decision recording, audit events, and measurable workflow metrics. The same scenario is available as an analyst-oriented UI at `/phase1` when the frontend is running.
 
-## Security Architecture
+See [`docs/PHASE1_PILOT.md`](docs/PHASE1_PILOT.md) for acceptance criteria and limitations.
 
+## Target use
 
-Security is a core architectural concern.
+GoAnalyze Government is designed to help public-sector analysts process environmental applications, permits, studies, inspection records, correspondence and compliance evidence while preserving human accountability.
 
+Core workflow target:
 
-The platform includes:
+**ingest → extract/OCR → classify → completeness → search → evidence/citations → regulatory mapping → risk/priority → analyst review → human decision → audit/export**
 
-- Tenant isolation
+## Current engineering foundation
 
-- RBAC
+The repository currently includes:
 
-- ABAC
+- FastAPI backend and Next.js frontend
+- PostgreSQL persistence and migrations
+- Keycloak/OIDC JWT verification with issuer, audience, expiry and signature validation
+- RBAC/ABAC authorization and tenant-scoped access controls
+- Hash-chained audit records, including a concurrency fix verified against real PostgreSQL
+- Document upload/download APIs with size limits, SHA-256 integrity checks and server-derived storage keys
+- Search API with OpenSearch integration path and database fallback
+- Redis-backed rate limiting
+- OpenTelemetry instrumentation
+- Docker, Kubernetes/Helm and Terraform deployment artifacts
+- Automated Python/frontend quality checks and GitHub Actions CI configuration
+- CycloneDX SBOM generation evidence
+- Environmental review primitives for completeness, evidence mapping and risk/priority support
 
-- Authentication
+These capabilities are not equivalent to a completed government production deployment. See the readiness register for the exact evidence and limitations.
 
-- Authorization
+## Critical limitation: AI/RAG maturity
 
-- Audit trails
+The current RAG service is citation-grounded application logic, not yet a complete production LLM/RAG stack with a validated model provider, retrieval benchmark, citation-accuracy benchmark and prompt-injection evaluation suite. This is intentionally stated plainly so the repository does not overclaim.
 
-- Protected document workflows
+## Regulatory knowledge
 
-- Environment-based configuration
+GoAnalyze does **not** invent Québec legal requirements. Regulatory knowledge is modeled as versioned, provenance-bearing sources and obligations that must be authoritative or customer-approved before they can drive regulatory assertions. Demo/unverified material must remain clearly labeled.
 
+## Security and AI governance
 
-The repository includes dedicated documentation covering security, architecture, bugs, deployment, and production readiness.
+See [`docs/SECURITY_AI_GOVERNANCE.md`](docs/SECURITY_AI_GOVERNANCE.md). Uploaded documents are untrusted input. Tenant boundaries, authorization, citation provenance, prompt-injection resistance, model permissions, auditability and human review are treated as security controls rather than marketing claims.
 
+## Government deployment model
 
-## AI & Retrieval
+The architecture is intended to support government-controlled cloud, private cloud, on-premises and isolated deployments, subject to validating the actual infrastructure configuration in the target environment. The architecture document contains both implemented components and target-state components; diagrams are not proof of production integration.
 
+## Commercial model
 
-```text
+The proposed commercial model separates:
 
-Document
+1. Core platform
+2. Government configuration
+3. Environmental/customer integrations
+4. Customer data
+5. Customer-approved regulatory knowledge
+6. Enterprise deployment and services
 
-   │
+Potential commercial packaging is described in [`docs/GOVERNMENT_PRODUCT.md`](docs/GOVERNMENT_PRODUCT.md) and [`docs/PROCUREMENT_READINESS.md`](docs/PROCUREMENT_READINESS.md). No contract value is asserted.
 
-   ▼
+## Decision-support boundary
 
-Ingestion
+GoAnalyze Government is decision-support software. It must not autonomously issue legally binding environmental decisions. AI findings, regulatory mappings and risk/priority assessments require appropriate evidence and human review.
 
-   │
+## Evidence-first documentation
 
-   ▼
-
-Processing
-
-   │
-
-   ▼
-
-Embeddings / Indexing
-
-   │
-
-   ▼
-
-Retrieval
-
-   │
-
-   ▼
-
-Relevant Context
-
-   │
-
-   ▼
-
-LLM Analysis
-
-   │
-
-   ▼
-
-Structured / User-facing Result
-
-```
-
-
-## Infrastructure
-
-
-### Infrastructure as Code
-
-```text
-
-terraform/
-
-```
-
-
-### Kubernetes
-
-```text
-
-helm/
-
-└── goanalyze-government/
-
-```
-
-
-### Observability
-
-```text
-
-observability/
-
-```
-
-
-### Production Containers
-
-```text
-
-Dockerfile
-
-Dockerfile.production
-
-```
-
-
-### Database
-
-```text
-
-migrations/
-
-```
-
-
-## Testing
-
-
-The repository includes a dedicated test suite:
-
-
-```text
-
-tests/
-
-```
-
-
-Testing is part of the application development workflow rather than an afterthought.
-
-
-## Repository Structure
-
-
-```text
-
-GoAnalyze/
-
-├── frontend/
-
-├── gov_platform/
-
-├── helm/
-
-├── migrations/
-
-├── nginx/
-
-├── observability/
-
-├── terraform/
-
-├── tests/
-
-├── .github/
-
-├── ARCHITECTURE.md
-
-├── BUSINESS_CASE.md
-
-├── EXECUTION_EVIDENCE.md
-
-├── FINAL_DEPLOYMENT_REPORT.md
-
-├── FINAL_OBSERVABILITY_REPORT.md
-
-├── FINAL_PRODUCTION_READINESS.md
-
-├── Dockerfile
-
-├── Dockerfile.production
-
-└── README.md
-
-```
-
-
-## Engineering Focus
-
-
-GoAnalyze demonstrates an approach to AI engineering that goes beyond the model layer:
-
-
-**AI + Security + Retrieval + Backend + Infrastructure + Observability + Testing**
-
-
-## Technology Areas
-
-
-Python · LLMs · RAG · Semantic Search · Document Intelligence · Docker · Kubernetes · Helm · Terraform · Nginx · Database Migrations · Automated Testing · Observability · RBAC · ABAC
-
-
-## Documentation
-
-
-The repository contains additional technical documentation covering:
-
-- Architecture
-
-- Business case
-
-- Deployment
-
-- Observability
-
-- Production readiness
-
-- Database auditing
-
-- Execution evidence
-
-- Bugs and fixes
-
-
-See the corresponding Markdown files in the repository.
-
+- [`PRODUCTION_READINESS.md`](PRODUCTION_READINESS.md) — authoritative current readiness register
+- [`ARCHITECTURE.md`](ARCHITECTURE.md) — target/logical architecture
+- [`FINAL_SECURITY_REPORT.md`](FINAL_SECURITY_REPORT.md) — recorded security testing evidence
+- [`FINAL_PRODUCTION_READINESS.md`](FINAL_PRODUCTION_READINESS.md) — historical readiness assessment
+- [`FEATURE_COMPLETION_REPORT.md`](FEATURE_COMPLETION_REPORT.md) — documented feature implementation evidence
+- [`docs/PHASE1_PILOT.md`](docs/PHASE1_PILOT.md) — Phase 1 synthetic pilot and acceptance criteria
+- [`docs/SECURITY_AI_GOVERNANCE.md`](docs/SECURITY_AI_GOVERNANCE.md) — AI/security control model
+- [`docs/GOVERNMENT_PRODUCT.md`](docs/GOVERNMENT_PRODUCT.md) — product and commercial boundary
+- [`docs/PROCUREMENT_READINESS.md`](docs/PROCUREMENT_READINESS.md) — buyer evaluation framework
 
 ## Disclaimer
 
-
-This project is a technical portfolio demonstrating enterprise AI architecture and engineering practices.
-
-
-Sensitive production data, credentials, and secrets should never be committed to the repository.
+This project is an evolving commercial/product engineering effort. No customer deployment, government endorsement, regulatory approval, certification, legal conclusion or security accreditation is claimed unless independently documented with evidence.
