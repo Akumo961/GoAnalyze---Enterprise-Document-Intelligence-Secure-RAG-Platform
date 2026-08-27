@@ -17,6 +17,7 @@ def isolate_production_settings_from_host_environment(monkeypatch: pytest.Monkey
         "GOV_DATABASE_URL",
         "GOV_REDIS_URL",
         "GOV_OPENSEARCH_URL",
+        "GOV_ALLOWED_ORIGINS",
     ):
         monkeypatch.delenv(name, raising=False)
 
@@ -31,6 +32,7 @@ def production_settings(**overrides: object) -> Settings:
         "database_url": "postgresql+asyncpg://app:secret@postgres.internal:5432/goanalyze",
         "redis_url": "rediss://redis.internal:6379/0",
         "opensearch_url": "https://opensearch.internal:9200",
+        "allowed_origins": ["https://app.internal.example"],
     }
     values.update(overrides)
     return Settings(**values)
@@ -49,6 +51,8 @@ def test_valid_production_configuration_passes() -> None:
         {"audit_hash_secret": "short"},
         {"database_url": "sqlite+aiosqlite:///./local.db"},
         {"database_url": "postgresql+asyncpg://app:secret@localhost:5432/goanalyze"},
+        {"allowed_origins": ["http://app.internal.example"]},
+        {"allowed_origins": ["*"]},
     ],
 )
 def test_unsafe_production_configuration_fails_closed(override: dict[str, object]) -> None:

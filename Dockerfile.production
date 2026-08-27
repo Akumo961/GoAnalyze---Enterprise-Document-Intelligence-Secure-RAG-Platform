@@ -1,4 +1,20 @@
-FROM python:3.12-alpine
+# confluent-kafka only publishes prebuilt wheels for manylinux (glibc) --
+# there is no musllinux wheel on PyPI for any released version. On a musl
+# base (e.g. python:3.12-alpine) pip is therefore forced to build the
+# extension from source, which requires a system librdkafka whose version
+# matches (or exceeds) whatever confluent-kafka version pip resolves. Since
+# pyproject.toml pins "confluent-kafka>=2.5.0" with no upper bound, pip
+# resolves the newest release available at build time -- currently 2.15.0 --
+# while Alpine's own package repositories lag well behind that (~2.6.1 in
+# the 3.21 community repo). Chasing that version skew with apk is fragile:
+# it would only work until the next confluent-kafka release outpaces
+# Alpine's packaged librdkafka again.
+#
+# Using a glibc-based slim image instead lets pip install confluent-kafka's
+# official prebuilt wheel directly -- no compiler, no system librdkafka, no
+# version-matching to maintain, and a simpler image than an Alpine layer
+# that has to install and then strip a build toolchain.
+FROM python:3.12-slim-bookworm
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
@@ -7,16 +23,24 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
-RUN addgroup -S -g 65532 appgroup \
-    && adduser -S -D -H -u 65532 -G appgroup appuser
+# ca-certificates is required for outbound TLS (Keycloak, OpenSearch,
+# MinIO, Kafka, OTLP, etc.); it is not guaranteed present in the slim base.
+# No compiler is installed: every dependency in pyproject.toml, including
+# confluent-kafka, ships a manylinux wheel for cp312, so nothing needs to
+# be built from source.
+RUN apt-get update \
+    && apt-get install --no-install-recommends -y ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN groupadd --system --gid 65532 appgroup \
+    && useradd --system --uid 65532 --gid appgroup --no-create-home --shell /usr/sbin/nologin appuser
 
 COPY pyproject.toml /app/
 COPY gov_platform /app/gov_platform
 COPY alembic.ini /app/
 COPY migrations /app/migrations
 
-RUN pip install . \
-    && rm -rf /root/.cache /tmp/*
+RUN pip install .
 
 USER 65532:65532
 
