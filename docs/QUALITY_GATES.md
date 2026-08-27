@@ -14,7 +14,7 @@ This document describes the automated Phase 12 gates. A gate is **configured**, 
 | API validation | FastAPI OpenAPI generation assertion | Fails when OpenAPI cannot be produced |
 | Frontend lint/build | `npm run lint`; `npm run build` | Fails on either command |
 | Container build | Production API and frontend images | Fails on Docker build error |
-| Container scan | Trivy at HIGH/CRITICAL | Fails on matching known vulnerability |
+| Container scan | Trivy at HIGH/CRITICAL | Fails on a matching vulnerability with an available fix; unfixed findings remain reported release risks |
 | SBOM | CycloneDX SBOMs for both images | Uploads artifacts only after generation succeeds |
 
 The backend job provisions PostgreSQL and Redis service containers. The separate integration workflow also exercises migrations and health/readiness endpoints against PostgreSQL and Redis.
@@ -26,6 +26,7 @@ The backend job provisions PostgreSQL and Redis service containers. The separate
 - A failed, cancelled, skipped, or unavailable run is **RED** for release evidence.
 - Coverage percentage is a regression floor, not a government-production coverage claim.
 - Dependency and container scanners identify known issues; they do not replace threat modelling, code review, penetration testing, or supply-chain review.
+- The container gate uses Trivy's ignore-unfixed option. This does not accept an unfixed vulnerability for production; it keeps non-remediable base-image findings visible while enforcing remediable findings.
 
 ## Current status
 
