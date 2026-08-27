@@ -33,7 +33,24 @@ jobs:
         run: docker compose -f docker-compose.yml config --quiet
 
       - name: Start infrastructure smoke topology
-        run: docker compose -f docker-compose.phase13.yml up -d --wait
+        run: docker compose -f docker-compose.phase13.yml up -d
+
+      - name: Wait for infrastructure services
+        run: |
+          set -euo pipefail
+          for attempt in $(seq 1 60); do
+            docker compose -f docker-compose.phase13.yml ps
+            bad_services=$(docker compose -f docker-compose.phase13.yml ps --format json | jq -r 'select(.State != "running" or (.Health != "" and .Health != "healthy")) | .Name')
+            if [ -z "$bad_services" ]; then
+              exit 0
+            fi
+            echo "Waiting for: $bad_services"
+            if [ "$attempt" -eq 60 ]; then
+              echo "Infrastructure readiness timeout"
+              exit 1
+            fi
+            sleep 5
+          done
 
       - name: Verify all infrastructure services are healthy/running
         run: |
