@@ -1,4 +1,4 @@
-FROM python:3.12-alpine
+FROM python:3.12-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
@@ -7,20 +7,17 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
-RUN addgroup -S -g 65532 appgroup \
-    && adduser -S -D -H -u 65532 -G appgroup appuser
+RUN groupadd --gid 65532 appgroup \
+    && useradd --uid 65532 --gid appgroup --no-create-home --shell /usr/sbin/nologin appuser
 
 COPY pyproject.toml /app/
 COPY gov_platform /app/gov_platform
 COPY alembic.ini /app/
 COPY migrations /app/migrations
 
-# confluent-kafka may fall back to a source build on Alpine. Keep only the
-# runtime library in the final image; remove compilers and headers after pip.
-RUN apk add --no-cache librdkafka \
-    && apk add --no-cache --virtual .build-deps gcc musl-dev python3-dev librdkafka-dev \
-    && pip install . \
-    && apk del .build-deps \
+# The glibc-based image permits installation of the published confluent-kafka
+# wheel. No compiler toolchain is retained in the runtime image.
+RUN pip install . \
     && rm -rf /root/.cache /tmp/*
 
 USER 65532:65532
