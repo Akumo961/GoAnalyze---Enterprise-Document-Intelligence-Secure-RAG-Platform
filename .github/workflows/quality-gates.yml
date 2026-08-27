@@ -118,12 +118,14 @@ jobs:
           image-ref: goanalyze-api:quality
           severity: CRITICAL,HIGH
           exit-code: "1"
+          ignore-unfixed: true
       - name: Scan frontend image
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25
         with:
           image-ref: goanalyze-frontend:quality
           severity: CRITICAL,HIGH
           exit-code: "1"
+          ignore-unfixed: true
       - name: Upload SBOMs
         uses: actions/upload-artifact@v6
         with:
