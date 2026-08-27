@@ -61,11 +61,11 @@ jobs:
       - name: Verify service-specific endpoints
         run: |
           docker compose -f docker-compose.phase13.yml run --rm --no-deps smoke-client sh -c 'printf "PostgreSQL and Redis are validated by their Docker healthchecks\n"'
-          docker compose -f docker-compose.phase13.yml run --rm --no-deps smoke-client curl -fsS 'http://opensearch:9200/_cluster/health?wait_for_status=yellow'
-          docker compose -f docker-compose.phase13.yml run --rm --no-deps smoke-client curl -fsS http://minio:9000/minio/health/live
+          docker compose -f docker-compose.phase13.yml run --rm --no-deps smoke-client sh -c 'for i in $(seq 1 30); do curl -fsS "http://opensearch:9200/_cluster/health?wait_for_status=yellow" && exit 0; sleep 2; done; exit 1'
+          docker compose -f docker-compose.phase13.yml run --rm --no-deps smoke-client sh -c 'for i in $(seq 1 30); do curl -fsS http://minio:9000/minio/health/live && exit 0; sleep 2; done; exit 1'
           docker compose -f docker-compose.phase13.yml run --rm --no-deps smoke-client sh -c 'for i in $(seq 1 30); do curl -fsS http://keycloak:9000/health/ready && exit 0; sleep 2; done; exit 1'
           docker compose -f docker-compose.phase13.yml run --rm --no-deps smoke-client curl -fsS http://keycloak:8080/realms/master
-          docker compose -f docker-compose.phase13.yml run --rm --no-deps smoke-client curl -fsS http://otel-collector:13133/
+          docker compose -f docker-compose.phase13.yml run --rm --no-deps smoke-client sh -c 'for i in $(seq 1 30); do curl -fsS http://otel-collector:13133/ && exit 0; sleep 2; done; exit 1'
 
       - name: Collect service logs on failure
         if: failure()
