@@ -69,6 +69,6 @@ resource "helm_release" "goanalyze" {
   dependency_update = false
 
   values = [
-    file("${path.module}/values/goanalyze-values.yaml")
+    file("${path.module}/values/goanalyze-values.yaml"),
   ]
 }
