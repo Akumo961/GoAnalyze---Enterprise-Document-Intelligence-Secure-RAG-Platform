@@ -69,7 +69,7 @@ jobs:
         run: docker compose -f docker-compose.phase13.yml run --rm --no-deps smoke-client sh -c 'for i in $(seq 1 30); do curl -fsS http://keycloak:9000/health/ready && exit 0; sleep 2; done; exit 1'
 
       - name: Verify Keycloak realm endpoint
-        run: docker compose -f docker-compose.phase13.yml run --rm --no-deps smoke-client curl -fsS http://keycloak:8080/realms/master
+        run: docker compose -f docker-compose.phase13.yml run --rm --no-deps smoke-client sh -c 'for i in $(seq 1 30); do curl -fsS http://keycloak:8080/realms/master && exit 0; sleep 2; done; exit 1'
 
       - name: Verify OpenTelemetry health endpoint
         run: docker compose -f docker-compose.phase13.yml run --rm --no-deps smoke-client sh -c 'for i in $(seq 1 30); do curl -fsS http://otel-collector:13133/ && exit 0; sleep 2; done; exit 1'
