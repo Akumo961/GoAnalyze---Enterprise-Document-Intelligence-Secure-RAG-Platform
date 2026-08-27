@@ -14,6 +14,7 @@ from .db.case_repository import CasePersistenceRepository
 from .db.cases import CASE_STATES
 from .db.document_repository import DocumentRepository
 from .db.session import get_session
+from .document_processing_api import router as document_processing_router
 from .document_security import (
     sanitize_filename,
     validate_content_type,
@@ -160,6 +161,7 @@ def create_app() -> FastAPI:
     settings = get_settings()
     app = FastAPI(title="GoAnalyze Government API", version="2.2.0", description="Decision-support API for secure environmental case and document workflows.", docs_url="/docs" if settings.environment != "production" else None, redoc_url=None if settings.environment == "production" else "/redoc")
     app.include_router(router)
+    app.include_router(document_processing_router)
 
     @app.get("/health/live", tags=["health"])
     async def liveness() -> dict[str, str]:
