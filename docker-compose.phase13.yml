@@ -78,6 +78,13 @@ services:
       - ./observability/otel-collector.yaml:/etc/otelcol-contrib/config.yaml:ro
     networks: [platform]
 
+  smoke-client:
+    image: curlimages/curl:8.15.0
+    entrypoint: ["/bin/sh", "-c"]
+    command: ["sleep 3600"]
+    networks: [platform]
+    profiles: [smoke]
+
 networks:
   platform:
     driver: bridge
