@@ -56,3 +56,20 @@ class DocumentRepository:
             .order_by(DocumentORM.created_at, DocumentORM.id)
         )
         return list(result.scalars().all())
+
+    async def save_analysis(
+        self,
+        *,
+        tenant_id: str,
+        document_id: UUID,
+        classification: str,
+        metadata: dict[str, object],
+    ) -> DocumentORM | None:
+        document = await self.get(tenant_id=tenant_id, document_id=document_id)
+        if document is None:
+            return None
+        document.classification = classification
+        document.doc_metadata = {**document.doc_metadata, **metadata}
+        await self.session.commit()
+        await self.session.refresh(document)
+        return document
