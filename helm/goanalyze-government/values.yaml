@@ -3,10 +3,44 @@ replicaCount: 3
 image:
   api: goanalyze-government-api:2.0.0
   frontend: goanalyze-government-frontend:2.0.0
+  pullPolicy: IfNotPresent
+
+imagePullSecrets: []
+
+serviceAccount:
+  create: true
+  name: ""
+
+podSecurityContext:
+  runAsNonRoot: true
+  seccompProfile:
+    type: RuntimeDefault
+
+containerSecurityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop: [ALL]
+
+api:
+  servicePort: 8080
+  existingSecret: goanalyze-runtime
+  livenessPath: /health
+  readinessPath: /ready
+
+frontend:
+  enabled: true
+  servicePort: 3000
+  existingSecret: ""
 
 ingress:
   enabled: true
+  className: nginx
   host: goanalyze.example.gov
+  tls:
+    enabled: true
+    secretName: goanalyze-tls
+  annotations: {}
 
 resources:
   api:
@@ -16,6 +50,27 @@ resources:
     limits:
       cpu: "2"
       memory: 4Gi
+  frontend:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: "1"
+      memory: 1Gi
+
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 2
+
+networkPolicy:
+  enabled: true
+  allowIngressNamespace: "ingress-nginx"
+
+hpa:
+  enabled: true
+  minReplicas: 3
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 70
 
 externalServices:
   postgresSecret: goanalyze-postgres
@@ -25,4 +80,4 @@ externalServices:
   kafkaBootstrapServers: kafka.gov-platform.svc.cluster.local:9092
   temporalHost: temporal.gov-platform.svc.cluster.local:7233
   keycloakIssuer: https://identity.example.gov/realms/goanalyze
-
+  otelEndpoint: http://otel-collector.observability.svc.cluster.local:4317

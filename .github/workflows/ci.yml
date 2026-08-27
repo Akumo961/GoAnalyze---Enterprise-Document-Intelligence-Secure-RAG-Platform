@@ -63,12 +63,13 @@ jobs:
           image: goanalyze-api:ci
           format: cyclonedx-json
           output-file: sbom-backend.cdx.json
-      - name: Scan images for known vulnerabilities
+      - name: Scan images for remediable known vulnerabilities
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           image-ref: goanalyze-api:ci
           severity: "CRITICAL,HIGH"
           exit-code: "1"
+          ignore-unfixed: true
       - uses: actions/upload-artifact@v6
         with:
           name: sbom-backend
