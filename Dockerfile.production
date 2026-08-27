@@ -15,7 +15,12 @@ COPY gov_platform /app/gov_platform
 COPY alembic.ini /app/
 COPY migrations /app/migrations
 
-RUN pip install . \
+# confluent-kafka may fall back to a source build on Alpine. Keep only the
+# runtime library in the final image; remove compilers and headers after pip.
+RUN apk add --no-cache librdkafka \
+    && apk add --no-cache --virtual .build-deps gcc musl-dev python3-dev librdkafka-dev \
+    && pip install . \
+    && apk del .build-deps \
     && rm -rf /root/.cache /tmp/*
 
 USER 65532:65532
