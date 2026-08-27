@@ -68,7 +68,5 @@ resource "helm_release" "goanalyze" {
   timeout           = 900
   dependency_update = false
 
-  values = [
-    file("${path.module}/values/goanalyze-values.yaml"),
-  ]
+  values = [file("${path.module}/values/goanalyze-values.yaml")]
 }
