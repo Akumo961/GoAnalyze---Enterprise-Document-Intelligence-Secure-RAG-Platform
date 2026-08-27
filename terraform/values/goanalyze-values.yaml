@@ -1,5 +1,41 @@
 replicaCount: 3
+
+image:
+  api: goanalyze-government-api:2.0.0
+  frontend: goanalyze-government-frontend:2.0.0
+  pullPolicy: IfNotPresent
+
+serviceAccount:
+  create: true
+
+api:
+  existingSecret: goanalyze-runtime
+
+frontend:
+  enabled: true
+
 ingress:
   enabled: true
+  className: nginx
   host: goanalyze.environment.gov
+  tls:
+    enabled: true
+    secretName: goanalyze-tls
 
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 2
+
+networkPolicy:
+  enabled: true
+  allowIngressNamespace: ingress-nginx
+
+hpa:
+  enabled: true
+  minReplicas: 3
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 70
+
+# Secret values are intentionally external to Terraform state and source.
+# The referenced Kubernetes Secrets must be provisioned by the target
+# environment's secret-management process.
