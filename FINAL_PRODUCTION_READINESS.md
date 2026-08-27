@@ -1,120 +1,67 @@
-# FINAL_PRODUCTION_READINESS.md
+# GoAnalyze — Production Readiness
 
-**Date:** 2026-08-02
+**Status:** Authoritative repository baseline for Phase 18.
 
-## Security status: strong at the application layer
+A GREEN status means implemented and supported by repository or CI evidence. It does not mean government approval, legal compliance, certification, customer acceptance, or unrestricted production readiness.
 
-All previously-identified critical/high vulnerabilities are fixed and
-regression-tested (see `FINAL_SECURITY_REPORT.md` for the full table):
-forgeable auth, unauthenticated header bypass, unauthenticated RAG
-endpoint, no persistence, insecure default secrets, missing security
-headers, no rate limiting, no upload size cap, and unsafe
-Content-Disposition filename handling are all closed. 50/50 tests pass;
-OWASP-style checklist is clean except for two infrastructure-dependent
-items (reverse-proxy `X-Forwarded-For` trust, which depends on a
-not-yet-determined deployment topology, and no formal penetration test).
+## Status legend
 
-## Deployment readiness
+- GREEN — implemented and supported by repository or CI evidence.
+- YELLOW — partially implemented, environment-dependent, or requiring additional controlled verification.
+- RED — not implemented or not verified.
 
-| Layer | Status |
-|---|---|
-| Application code | Ready for staging deployment |
-| Database schema/migrations | Defined, verified to run (SQLite stand-in); **never run against real PostgreSQL** |
-| Search | OpenSearch integration written and unit-tested against real request/response shapes; **never run against a real cluster** |
-| Object storage | MinIO integration written via the official SDK; **never run against a real MinIO/S3 endpoint** |
-| Rate limiting | Redis integration written and tested via fakeredis; **never run against real Redis under load** |
-| Container images | `Dockerfile` includes Alembic migration files; **image has never actually been built** (no Docker daemon here) |
-| docker-compose.yml | Secrets externalized, YAML validated; **stack has never been brought up** |
-| Frontend | Builds and lints cleanly; no document-management UI exists yet (search/upload/download screens) |
+## Current baseline
 
-**The single largest gap, unchanged across this entire engagement:** none
-of PostgreSQL, OpenSearch, MinIO, Redis, or Keycloak has ever actually
-been run in this sandbox. Every backend integration was built against the
-real SDK/protocol and proven either via a lightweight real stand-in
-(a locally-hosted HTTP JWKS server, actually reached over the network) or
-via a documented automatic fallback that was itself proven live (pointing
-config at a real-but-unreachable address and confirming the fallback
-engages). This is meaningfully more rigorous than mocking, but it is not
-the same as running against the real thing.
+| Area | Status | Evidence / limitation |
+|---|---|---|
+| Backend tests | GREEN | CI and phase acceptance workflows pass on the verified Phase 17 revision. |
+| Ruff / mypy | GREEN | Quality gates execute both checks. |
+| Frontend lint/build | GREEN | Quality gates validate frontend lint/build. |
+| Security static/dependency checks | GREEN | Bandit and pip-audit execute in quality gates; this is not certification. |
+| API validation | GREEN | Generated API contract is validated. |
+| RBAC / ABAC / tenant isolation | GREEN | Implemented and regression-tested; target-environment assessment remains required. |
+| Audit trail / tamper evidence | GREEN | Audit-chain implementation and concurrency evidence exist; formal records-management acceptance remains external. |
+| Observability | GREEN | Phase 15 acceptance validates aggregate telemetry. |
+| Phase 14 / 15 / 16 / 17 acceptance | GREEN | Corresponding acceptance workflows pass on the verified revision. |
+| Docker / SBOM / container scanning | YELLOW | CI coverage exists; target-environment image verification remains deployment-dependent. |
+| Full production-stack acceptance | RED | No claim that a government target environment has been deployed and accepted. |
+| Independent penetration test | RED | Not evidenced in this repository. |
+| Privacy/legal review | RED | Requires organizational and legal assessment. |
+| Disaster recovery / business continuity acceptance | RED | Customer-specific objectives and exercises require external validation. |
+| Government certification/accreditation | RED | No such claim is made. |
+| Government customer acceptance | RED | No such claim is made. |
 
-## Infrastructure status
+## Phase 18 repository cleanup
 
-Unchanged from `PRODUCTION_READINESS_REPORT.md`: Kafka and Temporal
-remain provisioned in `docker-compose.yml` with no application-side
-adapter. This session added real (if unverified-live) OpenSearch and
-MinIO adapters, closing two of the four previously-unintegrated services.
+The review searched for TODO/FIXME markers, dead-code indicators, production-readiness claims, fake-metric language, and security/product claims. Existing execution evidence records Ruff, mypy, Bandit, vulture, unsafe-I/O, and test checks. No confirmed application dead-code or TODO/FIXME defect was identified in the reviewed scope.
 
-## Remaining risks before go-live
+Historical reports are retained as evidence records and may contain point-in-time status. This file is the authoritative current readiness baseline.
 
-1. **Full Docker Compose stack has never been run.** Still the top
-   blocker, unchanged across every report in this engagement.
-2. **No real Keycloak realm, users, or role mappings configured.**
-3. **No load test against real Postgres/OpenSearch/MinIO/Redis**, only
-   against SQLite/fakeredis/in-memory stand-ins. Do not use this
-   engagement's performance numbers for capacity planning.
-4. **Full request bodies are buffered in memory on upload** (up to the
-   new 100 MB cap) rather than streamed -- fine for the current cap, but
-   worth revisiting if larger documents need to be supported.
-5. **No CI pipeline** to keep `pytest`/`ruff`/`npm run build` green
-   automatically going forward.
-6. **No frontend UI** for search, upload, or download yet -- backend is
-   ready, UI work is a distinct future scope decision.
-7. **No penetration test, DR/backup exercise, or privacy impact
-   assessment.**
+## Deliberate limitations
 
-## Deployment checklist
+1. CI-green does not equal government deployment approval.
+2. Production acceptance depends on the selected identity, network, storage, search, secrets, backup, monitoring, and operational topology.
+3. Independent penetration testing and privacy/legal review remain external.
+4. Regulatory knowledge must come from authoritative, provenance-controlled sources and receive appropriate legal/domain review before consequential use.
+5. GoAnalyze is decision-support software; human analysts remain responsible for consequential decisions.
+6. Performance and ROI must be measured in a representative pilot.
 
-- [x] Application installs and starts cleanly
-- [x] Auth is cryptographically real, not forgeable (tested)
-- [x] Tenant isolation enforced across every data-access path (tested)
-- [x] Audit trail persisted and tamper-evident
-- [x] Search implemented with graceful OpenSearch-outage fallback (tested)
-- [x] Download/upload implemented with graceful MinIO-outage fallback (tested)
-- [x] Rate limiting implemented with graceful Redis-outage fallback (tested)
-- [x] Upload size capped; filenames safely encoded (tested)
-- [x] Security headers present (tested)
-- [x] Secrets environment-provided; unsafe production config rejected at boot
-- [x] OpenAPI schema exports and validates (12 endpoints)
-- [x] Frontend builds and lints cleanly
-- [x] Real PostgreSQL and Redis installed and used throughout this engagement (not just SQLite/fakeredis)
-- [x] Real Keycloak configured, working realm, real password-grant JWTs verified end-to-end
-- [x] Real chaos testing: Postgres/Redis killed and restarted mid-traffic, graceful recovery confirmed
-- [x] Real backup/restore cycle against real PostgreSQL
-- [x] OpenTelemetry tracing genuinely implemented and verified (was previously a declared-but-unused dependency)
-- [x] Production nginx/Docker Compose/CI artifacts generated and validated with real tooling where possible
-- [x] Real SBOMs generated for backend and frontend
-- [x] Critical audit hash-chain concurrency bug found, root-caused, and fixed against real PostgreSQL (verified to 500 concurrent writers)
-- [x] Database connection pool sizing made explicit and configurable (was a silent 15-connection default)
-- [ ] Full Docker Compose stack run and healthy (no Docker daemon in this sandbox)
-- [ ] Real OpenSearch/MinIO integration run under load (no path to real binaries in this sandbox)
-- [ ] CI pipeline established and actually executed by GitHub (workflow written and YAML-validated, never run)
-- [ ] Image vulnerability scanning (trivy binary obtained; its DB is network-blocked)
-- [ ] Structured/JSON logging, Grafana dashboards
-- [ ] Penetration test completed
-- [ ] Deadlock/retry-strategy stress testing, statement timeouts, point-in-time recovery
-- [ ] Frontend document-management UI built (if in scope)
+## Required evidence before government production go-live
 
-## Overall production readiness score: 75 / 100
+- customer-approved architecture and threat model;
+- environment-specific identity, network and secrets configuration;
+- real-service integration and failure testing;
+- backup/restore and disaster-recovery exercise;
+- security assessment and penetration testing;
+- privacy/legal review and applicable organizational approvals;
+- regulatory-source provenance and update governance;
+- representative-data retrieval/citation evaluation;
+- operational runbooks, incident response and support model;
+- measurable pilot baseline and acceptance criteria;
+- documented human-review and escalation procedures.
 
-Up from 72. This round found and fixed a **critical** data-integrity bug:
-the audit hash chain (the system's tamper-evidence mechanism) forked
-under real concurrent writes -- reproduced against real PostgreSQL at
-every concurrency level from 10 to 300 writers, with up to 91% of events
-involved in a fork at the high end. An initial fix attempt (a PostgreSQL
-advisory lock) was tried, verified to work in isolation, but honestly
-found NOT to fix the real bug end to end and was abandoned rather than
-claimed as working. The actual fix -- a dedicated chain-state table with
-standard `SELECT ... FOR UPDATE` row locking -- was verified to produce
-zero forks at up to 500 concurrent writers, with a real, quantified ~12%
-throughput cost. A secondary connection-pool-sizing gap (silently capped
-at 15 total connections) was also found and fixed. Both carry full
-regression evidence (62/62 tests, `ruff`/`mypy` clean) and real
-before/after benchmarks -- see `FINAL_DATABASE_AUDIT.md`. An independent
-follow-up audit (N+1 queries, index usage confirmed via `EXPLAIN ANALYZE`,
-a `bandit` re-scan, unsafe-subprocess/deserialization grep) found no
-further confirmed defects. The score is still held back by the same
-structural ceiling as every prior report: the full Docker Compose stack,
-OpenSearch, MinIO, and image vulnerability scanning all remain untested
-against real infrastructure because none is reachable from this sandbox.
-That remains the single next step to close before a genuine production
-sign-off.
+## Phase 18 decision
+
+**Repository quality and evidence discipline: GREEN.** Unresolved RED/YELLOW items remain explicitly visible.
+
+**Overall government production readiness: NOT GREEN.** The repository is not represented as certified, accredited, legally approved, or customer-accepted.
