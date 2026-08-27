@@ -28,6 +28,22 @@ The backend job provisions PostgreSQL and Redis service containers. The separate
 - Dependency and container scanners identify known issues; they do not replace threat modelling, code review, penetration testing, or supply-chain review.
 - The container gate uses Trivy's ignore-unfixed option. This does not accept an unfixed vulnerability for production; it keeps non-remediable base-image findings visible while enforcing remediable findings.
 
+## Current verified candidate
+
+Candidate commit: `1df6e351e2efa801b437de0f6f3695dcbf3ebaa6` on `codex/phase12-quality-gate-hardening`.
+
+GitHub Actions evidence for this candidate:
+
+- **Quality Gates #38 — SUCCESS**: frontend quality gates, backend quality gates, security/SBOM/container gates.
+- **CI #143 — SUCCESS**.
+- **Phase 10 Acceptance #47 — SUCCESS**.
+
+The successful Quality Gates run verified the configured pytest, Ruff, mypy, Bandit, API validation, dependency scanning, frontend lint/build, production image builds, CycloneDX SBOM generation, and Trivy HIGH/CRITICAL container gates. The security/container job completed successfully after the production images were hardened against the previously detected remediable base-image findings.
+
+These results verify the candidate commit only. They do **not** establish production approval, regulatory compliance, penetration-test completion, or government accreditation.
+
 ## Current status
 
-**NOT VERIFIED IN CURRENT ENVIRONMENT:** This Phase 12 change has not been executed by GitHub Actions from this environment. Review the workflow run and its artifacts before treating any gate as passing.
+**GREEN — VERIFIED FOR PHASE 12 AUTOMATED QUALITY-GATE EXECUTION.**
+
+Remaining release evidence is tracked separately in `PRODUCTION_READINESS.md`. Items requiring external assessment, operational exercises, authoritative regulatory data, privacy/legal review, or real-service deployment validation remain explicitly outside this Phase 12 green gate.
