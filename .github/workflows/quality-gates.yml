@@ -1,0 +1,120 @@
+name: Quality Gates
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  backend-quality:
+    name: Backend quality gates
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: goanalyze
+          POSTGRES_PASSWORD: ci_test_password
+          POSTGRES_DB: goanalyze
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U goanalyze"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Install dependencies
+        run: pip install -e ".[dev]" pytest-cov pip-audit
+      - name: pytest
+        env:
+          GOV_DATABASE_URL: postgresql+asyncpg://goanalyze:ci_test_password@localhost:5432/goanalyze
+          GOV_ENVIRONMENT: development
+          GOV_ALLOW_INSECURE_DEV_AUTH: "true"
+          GOV_AUDIT_HASH_SECRET: quality-gates-test-secret
+          GOV_KEYCLOAK_ISSUER: https://keycloak.invalid/realms/ci
+          GOV_REDIS_URL: redis://localhost:6379/0
+          GOV_RATE_LIMIT_ENABLED: "false"
+        run: python -m pytest tests/ -v --cov=gov_platform --cov-report=term-missing --cov-report=xml --cov-fail-under=70
+      - name: ruff
+        run: ruff check gov_platform tests migrations scripts
+      - name: mypy
+        run: mypy gov_platform --ignore-missing-imports
+      - name: API validation
+        run: python -c "from gov_platform.main import app; assert app.openapi(); assert app.openapi()['paths']"
+      - name: Dependency scanning
+        run: pip-audit
+      - name: Upload coverage
+        uses: actions/upload-artifact@v6
+        with:
+          name: backend-coverage
+          path: coverage.xml
+
+  frontend-quality:
+    name: Frontend quality gates
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Install dependencies
+        run: npm ci
+      - name: Frontend lint
+        run: npm run lint
+      - name: Frontend build
+        run: npm run build
+      - name: Frontend dependency scanning
+        run: npm audit --audit-level=high
+
+  security-and-sbom:
+    name: Security, SBOM and container gates
+    runs-on: ubuntu-latest
+    needs: [backend-quality, frontend-quality]
+    steps:
+      - uses: actions/checkout@v5
+      - name: Build backend image
+        run: docker build -f Dockerfile.production -t goanalyze-api:quality .
+      - name: Build frontend image
+        run: docker build -t goanalyze-frontend:quality ./frontend
+      - name: Generate backend SBOM
+        uses: anchore/sbom-action@v0
+        with:
+          image: goanalyze-api:quality
+          format: cyclonedx-json
+          output-file: sbom-backend.cdx.json
+      - name: Generate frontend SBOM
+        uses: anchore/sbom-action@v0
+        with:
+          image: goanalyze-frontend:quality
+          format: cyclonedx-json
+          output-file: sbom-frontend.cdx.json
+      - name: Scan backend image
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25
+        with:
+          image-ref: goanalyze-api:quality
+          severity: CRITICAL,HIGH
+          exit-code: "1"
+      - name: Scan frontend image
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25
+        with:
+          image-ref: goanalyze-frontend:quality
+          severity: CRITICAL,HIGH
+          exit-code: "1"
+      - name: Upload SBOMs
+        uses: actions/upload-artifact@v6
+        with:
+          name: quality-gate-sboms
+          path: "sbom-*.cdx.json"
