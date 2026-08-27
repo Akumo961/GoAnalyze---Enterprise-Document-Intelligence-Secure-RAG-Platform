@@ -102,6 +102,12 @@ WORKFLOW_SLA_SECONDS = Histogram(
 )
 
 
+def record_missing_evidence(count: int) -> None:
+    """Record the number of missing evidence items without customer identifiers."""
+    if count > 0:
+        DOCUMENTS_MISSING.inc(count)
+
+
 def record_human_decision(decision: str, *, override: bool = False) -> None:
     """Record an aggregate human decision without storing case/customer data."""
     HUMAN_DECISIONS.labels(decision=decision).inc()
