@@ -3,6 +3,7 @@ from datetime import UTC, datetime, timedelta
 from uuid import UUID
 
 from .models import ReviewStatus
+from .observability import CASE_ASSIGNMENTS
 
 
 @dataclass
@@ -20,7 +21,7 @@ class AssignmentEngine:
         candidates = sorted(workload.items(), key=lambda item: (item[1], item[0]))
         assignee = candidates[0][0] if candidates else f"{skill}-pool"
         now = datetime.now(UTC)
-        return Assignment(
+        assignment = Assignment(
             case_id=case_id,
             assignee=assignee,
             queue=f"{skill}-review",
@@ -28,7 +29,8 @@ class AssignmentEngine:
             escalation_at=now + timedelta(days=4),
             status=ReviewStatus.technical_review,
         )
+        CASE_ASSIGNMENTS.labels(queue=assignment.queue).inc()
+        return assignment
 
 
 assignment_engine = AssignmentEngine()
-
