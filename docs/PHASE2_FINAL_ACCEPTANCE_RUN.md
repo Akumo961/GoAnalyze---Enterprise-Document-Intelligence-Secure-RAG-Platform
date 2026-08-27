@@ -1,0 +1,1 @@
+Final acceptance target for Phase 2. Execution evidence must come from GitHub Actions.
