@@ -14,7 +14,7 @@ def main() -> None:
         "human actor identifier",
         "human override",
         "separation of authority",
-        "consequential workflow APIs",
+        "consequential workflow apis",
         "enforce authorization independently",
         "engineering evidence only",
     ]
