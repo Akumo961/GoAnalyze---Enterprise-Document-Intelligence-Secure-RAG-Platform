@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from .config import get_settings
 from .db.repositories import AuditRepository
 from .models import AuditEvent
+from .observability import CASE_ASSIGNMENTS, record_human_decision
 
 
 class AuditLog:
@@ -19,27 +20,20 @@ class AuditLog:
     Concurrency: a naive "read the latest event, then write a new one
     referencing it" is a classic read-then-write race. Two concurrent
     appends for the *same tenant* can otherwise both read the same head and
-    both link to it, forking the chain. This was confirmed via a real
-    concurrency test against PostgreSQL, reproducible at every concurrency
-    level tried (10 through 300 concurrent writers). An initial fix using a
-    PostgreSQL advisory transaction lock (`pg_advisory_xact_lock`) did NOT
-    reliably prevent forks in testing -- the lock was verified in isolation
-    to serialize correctly, but forks still occurred at scale in the real
-    append path for reasons not fully root-caused before the approach was
-    abandoned in favor of a more standard, provably-correct mechanism (see
-    FINAL_DATABASE_AUDIT.md for the full investigation).
-
-    The current mechanism instead uses a dedicated `audit_chain_state`
-    table (one row per tenant, holding the current chain head) and takes a
-    real `SELECT ... FOR UPDATE` row lock on that tenant's row before
-    reading the head and writing the next event -- see
-    `AuditRepository.append_with_chain_lock`. This is standard Postgres row
-    locking, not an advisory lock, and was verified with the same
-    concurrency tests to produce zero forks at every level tried.
+    both link to it, forking the chain. The current mechanism uses a dedicated
+    `audit_chain_state` table and a real `SELECT ... FOR UPDATE` row lock on
+    that tenant's row before reading the head and writing the next event.
     """
 
     async def append(self, session: AsyncSession, event: AuditEvent) -> AuditEvent:
-        return await AuditRepository(session).append_with_chain_lock(event, self._hash_event)
+        result = await AuditRepository(session).append_with_chain_lock(event, self._hash_event)
+        if event.action == "case.human_decision_recorded":
+            decision = str(event.details.get("decision", "unknown"))
+            record_human_decision(decision, override=bool(event.details.get("ai_override", False)))
+        elif event.action == "case.assigned":
+            queue = str(event.details.get("queue", "unknown"))
+            CASE_ASSIGNMENTS.labels(queue=queue).inc()
+        return result
 
     async def list_events(self, session: AsyncSession, tenant_id: str) -> list[AuditEvent]:
         return await AuditRepository(session).list_for_tenant(tenant_id)

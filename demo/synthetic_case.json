@@ -1,0 +1,37 @@
+{
+  "dataset_id": "goanalyze-qc-environmental-demo-v1",
+  "authoritativeness": "synthetic_non_authoritative",
+  "notice": "All names, identifiers, measurements, locations, and regulatory statements in this dataset are fictional and must not be used for legal or operational decisions.",
+  "tenant_id": "demo-melccfp-01",
+  "case": {
+    "case_id": "00000000-0000-4000-8000-000000000014",
+    "project_type": "industrial_discharge",
+    "location": "Municipalité de Rivière-Verte, Québec (fictional)",
+    "applicant": "NordBoréal Industries inc. (fictional)",
+    "status": "technical_review"
+  },
+  "documents": [
+    {"filename":"01_application_form.txt","document_type":"application_form","content":"Environmental authorization application form. Applicant: NordBoréal Industries inc. Project type: industrial discharge. Site: fictional Rivière-Verte, Québec. This synthetic form is complete for demonstration purposes."},
+    {"filename":"02_site_plan.txt","document_type":"site_plan","content":"Site plan and process layout. Synthetic coordinates and facility layout for the fictional Rivière-Verte industrial site. This document is demonstration data."},
+    {"filename":"03_effluent_characterization.txt","document_type":"effluent_characterization","content":"Effluent characterization study. Synthetic sample results: flow 120 m3/day; pH 7.1; suspended solids 18 mg/L. Values are fictional and are not regulatory measurements."},
+    {"filename":"04_mitigation_plan.txt","document_type":"mitigation_plan","content":"Mitigation plan describing fictional spill-prevention controls, secondary containment, inspection frequency, and response procedures. Demonstration content only."},
+    {"filename":"05_public_consultation_record.txt","document_type":"public_consultation_record","included_in_case":false,"content":"Synthetic public consultation record intentionally withheld from the case to demonstrate missing-evidence detection. Demonstration content only."},
+    {"filename":"06_process_description.txt","document_type":"process_description","content":"Synthetic process description for a fictional manufacturing operation. Included to demonstrate document classification and evidence retrieval."},
+    {"filename":"07_monitoring_summary.txt","document_type":"monitoring_summary","content":"Synthetic monitoring summary with fictional monthly observations. Demonstration content only."},
+    {"filename":"08_emergency_contacts.txt","document_type":"emergency_contacts","content":"Synthetic emergency contact sheet for the fictional facility. Demonstration content only."},
+    {"filename":"09_technical_memo.txt","document_type":"technical_memo","content":"Synthetic technical review memo noting that one expected evidence category remains outstanding. Demonstration content only."},
+    {"filename":"10_correspondence.txt","document_type":"correspondence","content":"Synthetic correspondence between a fictional applicant and a fictional analyst concerning document completeness. Demonstration content only."},
+    {"filename":"11_calculation_appendix.txt","document_type":"calculation_appendix","content":"Synthetic calculation appendix with fictional values used only to demonstrate document search and citation behavior."},
+    {"filename":"12_management_summary.txt","document_type":"management_summary","content":"Synthetic management summary for the demonstration case. It contains no authoritative legal or regulatory requirements."}
+  ],
+  "intentionally_missing_document_types": ["public_consultation_record"],
+  "demo_regulatory_knowledge": [
+    {"id":"DEMO-OBL-001","title":"Synthetic discharge evidence requirement","status":"demo_only","statement":"A fictional demonstration rule requiring an effluent characterization record before technical review."},
+    {"id":"DEMO-OBL-002","title":"Synthetic mitigation evidence requirement","status":"demo_only","statement":"A fictional demonstration rule requiring a mitigation plan for screening."}
+  ],
+  "human_decision": {
+    "actor":"demo-analyst-01",
+    "decision":"request_additional_information",
+    "reason":"Demonstration decision: the missing public-consultation evidence is routed to a human analyst. This is not a legal conclusion."
+  }
+}

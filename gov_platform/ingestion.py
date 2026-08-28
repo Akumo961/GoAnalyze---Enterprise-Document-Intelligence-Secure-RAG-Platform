@@ -31,6 +31,11 @@ from .models import (
     PipelineStage,
     StageResult,
 )
+from .observability import (
+    DOCUMENT_PROCESSING_DURATION,
+    DOCUMENTS_PROCESSED,
+    record_stage_duration,
+)
 from .rag import rag_service
 from .workflows import assignment_engine
 
@@ -78,73 +83,56 @@ class IngestionPipeline:
         session: AsyncSession,
         raw_text: str | None = None,
     ) -> DocumentProcessingResult:
+        started = time.perf_counter()
         result = DocumentProcessingResult(document_id=record.id)
-
-        result.stages.append(self._timed(PipelineStage.upload, self._stage_upload, record))
-
-        ocr_stage, text = self._timed_with_output(
-            PipelineStage.ocr, self._stage_ocr, record, raw_text
-        )
-        result.stages.append(ocr_stage)
-
-        classify_stage, label = self._timed_with_output(
-            PipelineStage.classification, self._stage_classify, text
-        )
-        result.stages.append(classify_stage)
-        result.classification_label = label
-
-        metadata_stage, metadata = self._timed_with_output(
-            PipelineStage.metadata_extraction, self._stage_metadata, record, text
-        )
-        result.stages.append(metadata_stage)
-
-        entity_stage, entities = self._timed_with_output(
-            PipelineStage.entity_extraction, self._stage_entities, text
-        )
-        result.stages.append(entity_stage)
-        result.extracted_entities = entities
-
-        compliance_stage, compliance_output = self._timed_with_output(
-            PipelineStage.compliance_analysis,
-            self._stage_compliance,
-            record,
-            label,
-            metadata,
-        )
-        result.stages.append(compliance_stage)
-
-        risk_stage, risk_score = self._timed_with_output(
-            PipelineStage.risk_scoring, self._stage_risk, compliance_output
-        )
-        result.stages.append(risk_stage)
-        result.risk_score = risk_score
-
-        index_stage = self._timed(PipelineStage.vector_indexing, self._stage_vector_index, record, text)
-        result.stages.append(index_stage)
-
-        workflow_stage, queue = self._timed_with_output(
-            PipelineStage.workflow_engine, self._stage_workflow, record, risk_score
-        )
-        result.stages.append(workflow_stage)
-        result.workflow_queue = queue
-
-        audit_stage = await self._timed_async(
-            PipelineStage.audit_logging, self._stage_audit, record, actor, trace_id, purpose, result, session
-        )
-        result.stages.append(audit_stage)
-
-        result.completed = True
-        return result
-
-    # -- stage implementations -------------------------------------------------
+        try:
+            result.stages.append(self._timed(PipelineStage.upload, self._stage_upload, record))
+            ocr_stage, text = self._timed_with_output(PipelineStage.ocr, self._stage_ocr, record, raw_text)
+            result.stages.append(ocr_stage)
+            classify_stage, label = self._timed_with_output(PipelineStage.classification, self._stage_classify, text)
+            result.stages.append(classify_stage)
+            result.classification_label = label
+            metadata_stage, metadata = self._timed_with_output(
+                PipelineStage.metadata_extraction, self._stage_metadata, record, text
+            )
+            result.stages.append(metadata_stage)
+            entity_stage, entities = self._timed_with_output(PipelineStage.entity_extraction, self._stage_entities, text)
+            result.stages.append(entity_stage)
+            result.extracted_entities = entities
+            compliance_stage, compliance_output = self._timed_with_output(
+                PipelineStage.compliance_analysis, self._stage_compliance, record, label, metadata
+            )
+            result.stages.append(compliance_stage)
+            risk_stage, risk_score = self._timed_with_output(PipelineStage.risk_scoring, self._stage_risk, compliance_output)
+            result.stages.append(risk_stage)
+            result.risk_score = risk_score
+            index_stage = self._timed(PipelineStage.vector_indexing, self._stage_vector_index, record, text)
+            result.stages.append(index_stage)
+            workflow_stage, queue = self._timed_with_output(
+                PipelineStage.workflow_engine, self._stage_workflow, record, risk_score
+            )
+            result.stages.append(workflow_stage)
+            result.workflow_queue = queue
+            audit_stage = await self._timed_async(
+                PipelineStage.audit_logging, self._stage_audit, record, actor, trace_id, purpose, result, session
+            )
+            result.stages.append(audit_stage)
+            result.completed = True
+            DOCUMENTS_PROCESSED.labels(status="success").inc()
+            return result
+        except Exception:
+            DOCUMENTS_PROCESSED.labels(status="error").inc()
+            raise
+        finally:
+            DOCUMENT_PROCESSING_DURATION.observe(time.perf_counter() - started)
+            for stage in result.stages:
+                record_stage_duration(stage.stage.value, stage.duration_ms)
 
     def _stage_upload(self, record: DocumentRecord) -> dict[str, Any]:
         return {"object_uri": record.object_uri, "sha256": record.sha256}
 
     def _stage_ocr(self, record: DocumentRecord, raw_text: str | None) -> tuple[dict[str, Any], str]:
-        text = raw_text if raw_text is not None else self.ocr_engine.extract_text(
-            record.object_uri, record.content_type
-        )
+        text = raw_text if raw_text is not None else self.ocr_engine.extract_text(record.object_uri, record.content_type)
         return {"character_count": len(text)}, text
 
     def _stage_classify(self, text: str) -> tuple[dict[str, Any], str]:
@@ -245,8 +233,6 @@ class IngestionPipeline:
             ),
         )
         return {"audit_event_id": str(event.id), "event_hash": event.event_hash}
-
-    # -- helpers -----------------------------------------------------------
 
     def _timed(self, stage: PipelineStage, fn, *args) -> StageResult:
         start = time.perf_counter()

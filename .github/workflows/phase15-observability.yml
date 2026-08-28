@@ -1,0 +1,29 @@
+name: Phase 15 — Business Value Observability
+
+on:
+  push:
+    branches: [main, phase14-government-demo]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  observability-acceptance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install application dependencies required by the offline demo
+        run: python -m pip install -e . aiosqlite
+
+      - name: Run Phase 15 observability acceptance
+        run: python demo/verify_phase15.py

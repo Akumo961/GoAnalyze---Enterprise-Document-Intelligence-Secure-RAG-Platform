@@ -1,0 +1,57 @@
+name: Phase 16 — Procurement Positioning Acceptance
+
+on:
+  push:
+    branches: [main, phase14-government-demo]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  procurement-acceptance:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate procurement artifacts
+        shell: python
+        run: |
+          from pathlib import Path
+
+          required = [
+              Path("docs/PROCUREMENT_READINESS.md"),
+              Path("docs/COMMERCIAL_OFFERING.md"),
+              Path("docs/PROCUREMENT_EVIDENCE_MATRIX.md"),
+              Path("docs/PHASE16_ACCEPTANCE.md"),
+          ]
+          for path in required:
+              assert path.is_file(), f"Missing required Phase 16 artifact: {path}"
+
+          procurement = Path("docs/PROCUREMENT_READINESS.md").read_text(encoding="utf-8")
+          offering = Path("docs/COMMERCIAL_OFFERING.md").read_text(encoding="utf-8")
+          matrix = Path("docs/PROCUREMENT_EVIDENCE_MATRIX.md").read_text(encoding="utf-8")
+
+          for text, label in [(procurement, "procurement"), (offering, "offering")]:
+              assert "Pilot" in text, f"{label}: pilot package missing"
+              assert "Department" in text, f"{label}: department package missing"
+              assert "Enterprise" in text, f"{label}: enterprise package missing"
+              assert "No numerical pricing" in text or "No price" in text, f"{label}: pricing boundary missing"
+              assert "~$9M" in text, f"{label}: hypothetical $9M boundary missing"
+
+          for phrase in [
+              "Core Platform",
+              "Government Configuration",
+              "Environment Integrations",
+              "Customer Data",
+              "Regulatory Knowledge",
+              "Not claimed",
+              "Not verified",
+          ]:
+              assert phrase in procurement, f"procurement boundary missing: {phrase}"
+
+          assert "Evidence currently available" in matrix
+          assert "Evidence still required" in matrix
+          print("Phase 16 procurement artifacts validated.")

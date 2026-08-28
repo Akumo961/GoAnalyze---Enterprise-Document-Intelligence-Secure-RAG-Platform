@@ -1,0 +1,39 @@
+name: Phase 20 — Commercial Demo Acceptance
+
+on:
+  push:
+    branches: [phase14-government-demo]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  commercial-demo:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Install backend dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      - name: Run Phase 20 acceptance
+        run: python demo/verify_phase20.py
+
+      - name: Upload demo evidence
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: phase20-commercial-demo-evidence
+          path: demo/last_run.json
+          if-no-files-found: ignore

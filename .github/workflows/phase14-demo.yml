@@ -1,0 +1,54 @@
+name: Phase 14 — Demonstration Acceptance
+
+on:
+  push:
+    branches: [main, phase14-government-demo]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  demo-acceptance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install application dependencies required by the offline demo
+        run: python -m pip install -e . aiosqlite
+
+      - name: Run Phase 14 synthetic demonstration
+        run: python demo/run_demo.py
+
+      - name: Assert demonstration evidence
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          report = json.loads(Path("demo/last_run.json").read_text(encoding="utf-8"))
+          assert report["authoritativeness"] == "synthetic_non_authoritative"
+          steps = report["steps"]
+          assert steps["documents_processed"] >= 10
+          assert "public_consultation_record" in steps["missing_documents"]
+          assert steps["rag_grounded"] is True
+          assert steps["rag_citation_count"] >= 1
+          assert steps["regulatory_knowledge_status"] == "demo_only"
+          assert steps["human_review_required"] is True
+          assert steps["assigned_queue"] == "technical-review-review"
+          assert steps["human_decision"] == "request_additional_information"
+          assert steps["audit_event_count"] >= 1
+          assert steps["human_decision_audit_event_hash"]
+          print("Phase 14 demonstration evidence assertions passed.")
+          PY
+
+      - name: Remove generated demo state
+        if: always()
+        run: rm -f demo/last_run.json
