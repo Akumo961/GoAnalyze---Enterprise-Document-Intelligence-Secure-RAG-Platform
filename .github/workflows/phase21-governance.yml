@@ -1,0 +1,42 @@
+name: Phase 21 — Decision-Support Governance
+
+on:
+  push:
+    branches: [phase14-government-demo]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  governance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Run Phase 21 acceptance
+        run: python demo/verify_phase21.py
+
+      - name: Verify no autonomous decision API surface
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          root = Path("gov_platform")
+          forbidden = ("autonomous_decision", "legal_decision", "issue_permit", "deny_permit")
+          matches = []
+          for path in root.rglob("*.py"):
+              text = path.read_text(encoding="utf-8", errors="replace").lower()
+              for term in forbidden:
+                  if term in text:
+                      matches.append(f"{path}:{term}")
+          if matches:
+              raise SystemExit("Potential autonomous/legal decision surface found:\n" + "\n".join(matches))
+          print("No forbidden autonomous/legal decision API identifiers found")
