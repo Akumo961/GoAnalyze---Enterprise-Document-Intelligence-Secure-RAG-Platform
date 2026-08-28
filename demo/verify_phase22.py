@@ -14,7 +14,8 @@ def main() -> None:
         "human actor identifier",
         "human override",
         "separation of authority",
-        "consequential workflow APIs must enforce authorization independently",
+        "consequential workflow APIs",
+        "enforce authorization independently",
         "engineering evidence only",
     ]
     missing = [item for item in required if item not in text]
