@@ -15,15 +15,15 @@ jobs:
     timeout-minutes: 30
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: "3.12"
 
-      - name: Install backend dependencies
-        run: python -m pip install --upgrade pip && pip install -e ".[dev]"
+      - name: Install backend dependencies and quality tools
+        run: python -m pip install --upgrade pip && pip install -e ".[dev]" pytest-cov pip-audit bandit[toml]
 
       - name: Compile Python sources
         run: python -m compileall -q gov_platform
@@ -35,7 +35,7 @@ jobs:
         run: mypy gov_platform
 
       - name: Pytest with coverage gate
-        run: pytest --cov=gov_platform --cov-report=term-missing --cov-fail-under=70
+        run: python -m pytest tests/ -v --cov=gov_platform --cov-report=term-missing --cov-report=xml --cov-fail-under=70
 
       - name: Bandit
         run: bandit -r gov_platform -q
@@ -100,10 +100,10 @@ jobs:
 
       - name: Upload execution evidence
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: phase19-execution-evidence
           path: |
             goanalyze-phase19-sbom.json
-            pytest.xml
-          if-no-files-found: ignore
+            coverage.xml
+          if-no-files-found: warn
